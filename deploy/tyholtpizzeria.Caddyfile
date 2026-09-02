@@ -1,0 +1,10 @@
+{
+	auto_https off
+	admin off
+}
+
+:8009 {
+	root * /home/afras/projects/tyholtpizzeria
+	file_server
+	encode gzip zstd
+}
