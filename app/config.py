@@ -41,6 +41,10 @@ QR_PA_ETIKETT = os.environ.get("TP_QR_PA_ETIKETT", "1") == "1"
 # den lot seg skanne. Skjema og vertsnavn er ikke versalfoelsomme, saa
 # telefonen aapner sida som normalt. Sma bokstaver ville tvunget byte-modus.
 QR_URL = os.environ.get("TP_QR_URL", "HTTPS://TYHOLTPIZZERIA.AFRASUM.DEV")
+# QR bare pa den forste etiketten i en ordre, framfor pa alle. QR-en koster
+# 1,1 cm tape per etikett, sa en tre-pizza ordre sparer 2,2 cm. Avveiningen er
+# deling: er QR-en bare pa en eske, er det bare den ene som kan deles videre.
+QR_BARE_FORSTE = os.environ.get("TP_QR_BARE_FORSTE", "0") == "1"
 PRINT_TIDSAVBRUDD = int(os.environ.get("TP_PRINT_TIDSAVBRUDD", "30"))
 PRINT_MAKS_FORSOK = int(os.environ.get("TP_PRINT_MAKS_FORSOK", "3"))
 

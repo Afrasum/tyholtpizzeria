@@ -113,6 +113,8 @@ def render_strimmel(
     if not etiketter:
         raise ValueError("ingen etiketter å printe")
 
+    from . import config
+
     biter = [
         _tegn(
             tekst=e["tekst"],
@@ -121,9 +123,10 @@ def render_strimmel(
             indeks=e.get("indeks", 1),
             av=e.get("av", 1),
             forkortelse=e.get("forkortelse"),
-            qr_url=qr_url,
+            # Med QR_BARE_FORSTE far bare den forste etiketten i ordren QR.
+            qr_url=qr_url if (i == 0 or not config.QR_BARE_FORSTE) else None,
         )
-        for e in etiketter
+        for i, e in enumerate(etiketter)
     ]
 
     bredde = sum(b.width for b in biter) + KLIPPEROM * (len(biter) - 1)
