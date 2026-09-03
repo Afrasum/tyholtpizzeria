@@ -59,12 +59,15 @@ CREATE TABLE IF NOT EXISTS menyelement_ingrediens (
 -- Egen tabell framfor kalenderdato, fordi åpningstiden 15:00–00:00 ikke
 -- nødvendigvis stopper ved midnatt. Dagsnummer nullstilles per salgsdag,
 -- og en ekstra dag er én rad.
+-- startnummer: dagens forste ordre far dette nummeret framfor 1. Et tosifret
+-- starttall ser ut som vi har holdt pa en stund, og koster ingenting.
 CREATE TABLE IF NOT EXISTS salgsdag (
-    id      INTEGER PRIMARY KEY,
-    dato    TEXT NOT NULL UNIQUE,
-    apner   TEXT NOT NULL,
-    stenger TEXT NOT NULL,
-    aktiv   INTEGER NOT NULL DEFAULT 1 CHECK (aktiv IN (0, 1))
+    id          INTEGER PRIMARY KEY,
+    dato        TEXT NOT NULL UNIQUE,
+    apner       TEXT NOT NULL,
+    stenger     TEXT NOT NULL,
+    aktiv       INTEGER NOT NULL DEFAULT 1 CHECK (aktiv IN (0, 1)),
+    startnummer INTEGER NOT NULL DEFAULT 1
 );
 
 -- ── Ordrer ──────────────────────────────────────────────────────────────────

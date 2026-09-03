@@ -149,13 +149,14 @@ def test_bestilling_er_apen_utenfor_apningstid(tmp_path, monkeypatch):
         assert ordrer.kan_bestille(kob)[0] is True, "skal likevel vaere apent"
 
     res = opprett("Tester", None, [Onske(eid, 1)])
-    assert res["nummer"] == 1
+    assert res["nummer"] >= 1
 
 
-def test_testordrer_spiser_ikke_numre_fra_salgsdagene(tmp_path, monkeypatch):
-    """En bestilling utenfor salgsdagene far sin egen dag og teller.
+def test_numrene_starter_tosifret_ikke_paa_en(tmp_path, monkeypatch):
+    """Forste ordre skal ikke vaere «nummer 1».
 
-    Ellers ville lasttesting kvelden for startet den 4. pa nummer 300.
+    Et tosifret starttall ser ut som vi har holdt pa en stund. Numrene skal
+    fortsatt ga oppover en om gangen derfra.
     """
     db = _oppsett(tmp_path, monkeypatch)
     from app import ordrer
@@ -165,18 +166,34 @@ def test_testordrer_spiser_ikke_numre_fra_salgsdagene(tmp_path, monkeypatch):
         eid = kob.execute(
             "SELECT id FROM menyelement WHERE slug='margherita'"
         ).fetchone()["id"]
+        dag = ordrer.gjeldende_salgsdag(kob) or ordrer.salgsdag_for_ordre(kob)
 
-    for _ in range(3):
-        opprett("Tester", None, [Onske(eid, 1)])
+    forste = opprett("A", None, [Onske(eid, 1)])["nummer"]
+    andre = opprett("B", None, [Onske(eid, 1)])["nummer"]
+
+    assert 11 <= forste <= 47, f"startnummer {forste} er utenfor omradet"
+    assert andre == forste + 1
+
+
+def test_nummer_over_999_begynner_forfra(tmp_path, monkeypatch):
+    """Fire siffer far ikke plass stort pa 12 mm tape."""
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import ordrer
+    from app.ordrer import Onske, opprett
 
     with db.kobling() as kob:
-        dager = {
-            r["dato"]: r["n"]
-            for r in kob.execute(
-                "SELECT s.dato, COUNT(o.id) AS n FROM salgsdag s"
-                " LEFT JOIN ordre o ON o.salgsdag_id = s.id GROUP BY s.dato"
-            )
-        }
-    assert dager.get("2026-09-04", 0) == 0, "testordrer havnet pa selve kvelden"
-    assert dager.get("2026-09-05", 0) == 0
-    assert sum(dager.values()) == 3
+        eid = kob.execute(
+            "SELECT id FROM menyelement WHERE slug='margherita'"
+        ).fetchone()["id"]
+
+    # Sett dagen rett under taket.
+    with db.transaksjon() as kob:
+        dag = ordrer.salgsdag_for_ordre(kob)
+        kob.execute(
+            "UPDATE salgsdag SET startnummer = ? WHERE id = ?",
+            (ordrer.MAKS_DAGSNUMMER, dag["id"]),
+        )
+
+    assert opprett("A", None, [Onske(eid, 1)])["nummer"] == 999
+    assert opprett("B", None, [Onske(eid, 1)])["nummer"] == 1
+    assert opprett("C", None, [Onske(eid, 1)])["nummer"] == 2

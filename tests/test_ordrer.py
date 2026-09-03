@@ -80,7 +80,8 @@ def test_alle_pizzaer_inneholder_gluten_fra_deigen(tmp_path, monkeypatch):
             assert "melk" in koder, f"{slug} mangler melk"
 
 
-def test_dagsnummer_starter_paa_1_og_okes(tmp_path, monkeypatch):
+def test_dagsnummer_okes_med_en(tmp_path, monkeypatch):
+    """Startnummeret er tilfeldig, men stigningen skal vaere nøyaktig en."""
     db = _oppsett(tmp_path, monkeypatch)
     _tving_apent(db)
     from app.ordrer import Onske, opprett
@@ -88,8 +89,7 @@ def test_dagsnummer_starter_paa_1_og_okes(tmp_path, monkeypatch):
     eid = _meny_id(db, "margherita")
     a = opprett("Afras", None, [Onske(eid, 1)])
     b = opprett("Kari", None, [Onske(eid, 1)])
-    assert a["nummer"] == 1
-    assert b["nummer"] == 2
+    assert b["nummer"] == a["nummer"] + 1
 
 
 def test_en_etikett_per_pizza_i_en_strimmeljobb(tmp_path, monkeypatch):
@@ -326,7 +326,7 @@ def test_nummeret_er_delt_paa_tvers_av_pizzatyper(tmp_path, monkeypatch):
     to = opprett("B", None, [Onske(s, 2)])                       # bare skinke
     tre = opprett("C", None, [Onske(p, 1), Onske(m, 1)])         # forste paere + margherita
 
-    assert [en["nummer"], to["nummer"], tre["nummer"]] == [1, 2, 3], (
+    assert [to["nummer"], tre["nummer"]] == [en["nummer"] + 1, en["nummer"] + 2], (
         "telleren skal ga pa ordre, ikke per pizzatype"
     )
 
@@ -338,7 +338,7 @@ def test_nummeret_er_delt_paa_tvers_av_pizzatyper(tmp_path, monkeypatch):
                 (tre["ordre_id"],),
             ).fetchone()["nyttelast"]
         )
-    assert last["nummer"] == 3, "samme ordre ma ha samme nummer"
+    assert last["nummer"] == tre["nummer"], "samme ordre ma ha samme nummer"
     assert sorted(e["tekst"] for e in last["etiketter"]) == ["Margherita", "Pære"]
     assert sorted((e["indeks"], e["av"]) for e in last["etiketter"]) == [(1, 2), (2, 2)]
 
@@ -366,8 +366,12 @@ def test_nullstilling_sletter_ordrer_linjer_og_jobber(tmp_path, monkeypatch):
             n = kob.execute(f"SELECT COUNT(*) c FROM {tabell}").fetchone()["c"]
             assert n == 0, f"{tabell} hadde {n} rader igjen"
 
-    # Telleren starter pa nytt.
-    assert opprett("Etter", None, [Onske(eid, 1)])["nummer"] == 1
+    # Telleren begynner forfra fra dagens startnummer.
+    with db.kobling() as kob:
+        start = kob.execute(
+            "SELECT startnummer FROM salgsdag WHERE id = ?", (dag["id"],)
+        ).fetchone()["startnummer"]
+    assert opprett("Etter", None, [Onske(eid, 1)])["nummer"] == start
 
 
 def test_kodebokstaven_paa_menyen_matcher_etiketten(tmp_path, monkeypatch):
@@ -433,3 +437,35 @@ def test_bytte_av_mottaker_slaar_gjennom(tmp_path, monkeypatch):
     assert alle["vipps_navn"] == "Kristian"
     assert alle["vipps_nummer"] == "90214070"
     assert alle["vipps_url"] == "https://qr.vipps.no/28/2/01/031/4790214070?v=1"
+
+
+def test_skjermen_viser_nye_ordrer_som_under_arbeid(tmp_path, monkeypatch):
+    """Nummeret skal opp pa tavla i det sekundet bestillingen er inne.
+
+    Kunden som nettopp bestilte skal ikke sta og lure pa om den gikk gjennom
+    fordi kjokkenet ikke har trykket «i produksjon» ennaa.
+    """
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    from app.routes.skjerm import _tall
+    from app.ordrer import Onske, opprett, sett_status
+
+    eid = _meny_id(db, "margherita")
+    a = opprett("A", None, [Onske(eid, 1)])     # ny
+    b = opprett("B", None, [Onske(eid, 1)])     # -> i produksjon
+    c = opprett("C", None, [Onske(eid, 1)])     # -> klar
+    d = opprett("D", None, [Onske(eid, 1)])     # -> levert
+
+    sett_status(b["ordre_id"], "i_produksjon")
+    sett_status(c["ordre_id"], "klar")
+    sett_status(d["ordre_id"], "klar")
+    sett_status(d["ordre_id"], "levert")
+
+    with db.kobling() as kob:
+        tall = _tall(kob)
+
+    assert tall["under_arbeid"] == [a["nummer"], b["nummer"]], (
+        "bade ny og i_produksjon skal sta under arbeid"
+    )
+    assert tall["klare"] == [c["nummer"]]
+    assert d["nummer"] not in tall["under_arbeid"] + tall["klare"]

@@ -61,11 +61,24 @@ def transaksjon() -> Iterator[sqlite3.Connection]:
         kob.close()
 
 
+# Kolonner lagt til etter at basen forst ble tatt i bruk. CREATE TABLE IF NOT
+# EXISTS rorer ikke en tabell som alt finnes, sa disse ma legges til for seg.
+TILLEGGSKOLONNER: tuple[tuple[str, str, str], ...] = (
+    ("salgsdag", "startnummer", "INTEGER NOT NULL DEFAULT 1"),
+)
+
+
 def klargjor() -> None:
     """Lag katalog og tabeller. Idempotent, kjøres ved hver oppstart."""
     config.DB_STI.parent.mkdir(parents=True, exist_ok=True)
     kob = _koble(config.DB_STI)
     try:
         kob.executescript(SKJEMA.read_text(encoding="utf-8"))
+        for tabell, kolonne, type_ in TILLEGGSKOLONNER:
+            finnes = {
+                r["name"] for r in kob.execute(f"PRAGMA table_info({tabell})")
+            }
+            if kolonne not in finnes:
+                kob.execute(f"ALTER TABLE {tabell} ADD COLUMN {kolonne} {type_}")
     finally:
         kob.close()

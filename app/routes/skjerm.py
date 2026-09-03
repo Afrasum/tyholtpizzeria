@@ -2,6 +2,12 @@
 
 Kun numre. Navn hører på etiketten og i admin, ikke på en skjerm i et rom
 fullt av fremmede.
+
+To spalter: alt som ikke er klart står under «Under arbeid», og alt som er
+klart står under «Klar». Skillet mellom «ny» og «i produksjon» finnes i
+admin, men ikke her — for kunden er det samme sak, og nummeret skal opp på
+tavla i det sekundet bestillingen er inne. Ellers står de og lurer på om den
+gikk gjennom.
 """
 
 from __future__ import annotations
@@ -15,31 +21,42 @@ from ..maler import maler
 
 ruter = APIRouter()
 
+# Alt som verken er klart, levert, forlatt eller avbrutt.
+UNDER_ARBEID = ("ny", "i_produksjon")
+
+
+def _tall(kob) -> dict:
+    dag = ordrer.gjeldende_salgsdag(kob)
+    if dag is None:
+        return {"klare": [], "under_arbeid": []}
+    plassholdere = ",".join("?" * len(UNDER_ARBEID))
+    under = [
+        r["dagsnummer"]
+        for r in kob.execute(
+            f"SELECT dagsnummer FROM ordre WHERE salgsdag_id = ?"
+            f" AND status IN ({plassholdere}) ORDER BY dagsnummer",
+            (dag["id"], *UNDER_ARBEID),
+        )
+    ]
+    return {"klare": ordrer.klare_numre(kob), "under_arbeid": under}
+
 
 @ruter.get("/skjerm", response_class=HTMLResponse)
 def skjerm(request: Request):
     with kobling() as kob:
+        data = _tall(kob)
         return maler.TemplateResponse(
             request,
             "skjerm/skjerm.html",
-            {"numre": ordrer.klare_numre(kob), "innst": innstillinger.alle(kob)},
+            {
+                "klare": data["klare"],
+                "under_arbeid": data["under_arbeid"],
+                "innst": innstillinger.alle(kob),
+            },
         )
 
 
 @ruter.get("/skjerm/data")
 def skjermdata():
     with kobling() as kob:
-        dag = ordrer.gjeldende_salgsdag(kob)
-        underveis = (
-            [
-                r["dagsnummer"]
-                for r in kob.execute(
-                    "SELECT dagsnummer FROM ordre WHERE salgsdag_id = ?"
-                    " AND status = 'i_produksjon' ORDER BY dagsnummer",
-                    (dag["id"],),
-                )
-            ]
-            if dag
-            else []
-        )
-        return {"klare": ordrer.klare_numre(kob), "i_produksjon": underveis}
+        return _tall(kob)

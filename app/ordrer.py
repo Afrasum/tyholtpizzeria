@@ -7,6 +7,7 @@ henger på at det som skjer her er riktig.
 from __future__ import annotations
 
 import json
+import random
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
@@ -79,6 +80,11 @@ def aapen_salgsdag(kob: sqlite3.Connection, tid: datetime | None = None) -> sqli
     ).fetchone()
 
 
+def tilfeldig_startnummer() -> int:
+    """Et tosifret starttall. Ser bedre ut enn å rope opp «nummer 1»."""
+    return random.randint(11, 47)
+
+
 def gjeldende_salgsdag(
     kob: sqlite3.Connection, tid: datetime | None = None
 ) -> sqlite3.Row | None:
@@ -139,13 +145,15 @@ def salgsdag_for_ordre(kob: sqlite3.Connection, tid: datetime | None = None) -> 
     dato = nu.date().isoformat()
     kob.execute(
         """
-        INSERT INTO salgsdag (dato, apner, stenger, aktiv) VALUES (?, ?, ?, 1)
+        INSERT INTO salgsdag (dato, apner, stenger, aktiv, startnummer)
+        VALUES (?, ?, ?, 1, ?)
         ON CONFLICT(dato) DO NOTHING
         """,
         (
             dato,
             nu.replace(hour=0, minute=0, second=0).isoformat(timespec="seconds"),
             nu.replace(hour=23, minute=59, second=59).isoformat(timespec="seconds"),
+            tilfeldig_startnummer(),
         ),
     )
     return kob.execute("SELECT * FROM salgsdag WHERE dato = ?", (dato,)).fetchone()
@@ -154,18 +162,46 @@ def salgsdag_for_ordre(kob: sqlite3.Connection, tid: datetime | None = None) -> 
 # ── Opprettelse ─────────────────────────────────────────────────────────────
 
 
+MAKS_DAGSNUMMER = 999  # tre siffer er det som får plass stort på etiketten
+
+
 def _neste_dagsnummer(kob: sqlite3.Connection, salgsdag_id: int) -> int:
     """Neste ledige nummer for salgsdagen.
+
+    Starter på salgsdagens startnummer framfor 1 — et tosifret starttall ser
+    ut som vi har holdt på en stund, og koster ingenting.
 
     Trygg fordi kalleren holder BEGIN IMMEDIATE-låsen: to samtidige
     bestillinger kan ikke lese samme MAX. UNIQUE(salgsdag_id, dagsnummer) i
     schemaet er beltet i tillegg til bukseselene.
     """
     rad = kob.execute(
-        "SELECT COALESCE(MAX(dagsnummer), 0) + 1 AS neste FROM ordre WHERE salgsdag_id = ?",
+        """
+        SELECT s.startnummer AS start,
+               COALESCE(MAX(o.dagsnummer), 0) AS hoyeste
+        FROM salgsdag s LEFT JOIN ordre o ON o.salgsdag_id = s.id
+        WHERE s.id = ?
+        """,
         (salgsdag_id,),
     ).fetchone()
-    return int(rad["neste"])
+
+    neste = max(int(rad["hoyeste"]) + 1, int(rad["start"]))
+    if neste <= MAKS_DAGSNUMMER:
+        return neste
+
+    # Over 999: fire siffer blir for smått på 12 mm tape, så vi begynner
+    # forfra på det laveste ledige. Vi kommer aldri hit på en kveld, men et
+    # nummer som ikke får plass på etiketten er verre enn ett som gjentas.
+    brukte = {
+        r["dagsnummer"]
+        for r in kob.execute(
+            "SELECT dagsnummer FROM ordre WHERE salgsdag_id = ?", (salgsdag_id,)
+        )
+    }
+    for kandidat in range(1, MAKS_DAGSNUMMER + 1):
+        if kandidat not in brukte:
+            return kandidat
+    raise Avvist("Alle numre er brukt opp for i dag. Nullstill dagen i admin.")
 
 
 def opprett(

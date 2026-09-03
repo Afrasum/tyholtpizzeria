@@ -1,20 +1,29 @@
 {% extends "base.html" %}
-{% block tittel %}Klar til henting{% endblock %}
+{% block tittel %}Tavla – {{ innst.stedsnavn }}{% endblock %}
 {% block kropp_klasse %}skjerm{% endblock %}
 
 {% block innhold %}
 <main class="skjerm-side">
-  <h1>Klar til henting</h1>
 
-  <ul class="numre" id="numre">
-    {% for n in numre %}<li>{{ n }}</li>{% endfor %}
-  </ul>
-  <p class="tom" id="tom" {% if numre %}hidden{% endif %}>Ingen klare ennå</p>
-
-  <section class="underveis">
-    <h2>Under arbeid</h2>
-    <ul class="numre-sma" id="underveis"></ul>
+  {# Klar-spalten dominerer med vilje: det er den kundene skanner etter fra
+     andre siden av rommet. Under arbeid er beroligende informasjon, ikke
+     handling — derfor mindre og dempet. #}
+  <section class="spalte spalte-klar">
+    <h2>Klar til henting</h2>
+    <ul class="numre" id="numre">
+      {% for n in klare %}<li>{{ n }}</li>{% endfor %}
+    </ul>
+    <p class="tom" id="tom" {% if klare %}hidden{% endif %}>Ingen klare ennå</p>
   </section>
+
+  <section class="spalte spalte-arbeid">
+    <h2>Under arbeid</h2>
+    <ul class="numre-sma" id="under-arbeid">
+      {% for n in under_arbeid %}<li>{{ n }}</li>{% endfor %}
+    </ul>
+    <p class="tom-liten" id="tom-arbeid" {% if under_arbeid %}hidden{% endif %}>—</p>
+  </section>
+
 </main>
 {% endblock %}
 
@@ -33,9 +42,10 @@ async function oppdater() {
 
     document.getElementById("numre").innerHTML =
       d.klare.map(n => `<li>${n}</li>`).join("");
-    document.getElementById("underveis").innerHTML =
-      d.i_produksjon.map(n => `<li>${n}</li>`).join("");
+    document.getElementById("under-arbeid").innerHTML =
+      d.under_arbeid.map(n => `<li>${n}</li>`).join("");
     document.getElementById("tom").hidden = d.klare.length > 0;
+    document.getElementById("tom-arbeid").hidden = d.under_arbeid.length > 0;
   } catch (e) { /* nettverkshikk */ }
 }
 setInterval(oppdater, 3000);

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from . import allergener
+from . import allergener, ordrer
 from .db import naa, transaksjon
 
 PRIS_ORE = 5900  # 59 kr flat for alle tre.
@@ -180,14 +180,23 @@ def kjor() -> None:
                 )
 
         for dato, apner, stenger in SALGSDAGER:
+            # startnummer settes bare ved opprettelse. Ellers ville hver
+            # omstart trukket et nytt tall, og numrene hoppet midt i kvelden.
             kob.execute(
                 """
-                INSERT INTO salgsdag (dato, apner, stenger, aktiv)
-                VALUES (?, ?, ?, 1)
+                INSERT INTO salgsdag (dato, apner, stenger, aktiv, startnummer)
+                VALUES (?, ?, ?, 1, ?)
                 ON CONFLICT(dato) DO UPDATE SET
-                    apner = excluded.apner, stenger = excluded.stenger
+                    apner = excluded.apner,
+                    stenger = excluded.stenger,
+                    -- Bare hvis den aldri er satt. Tilfeldig gir alltid over
+                    -- 1, sa 1 betyr «kommer fra migreringens standardverdi».
+                    startnummer = CASE
+                        WHEN salgsdag.startnummer <= 1 THEN excluded.startnummer
+                        ELSE salgsdag.startnummer
+                    END
                 """,
-                (dato, apner, stenger),
+                (dato, apner, stenger, ordrer.tilfeldig_startnummer()),
             )
 
         for i, (navn, nummer) in enumerate(VIPPS_MOTTAKERE):

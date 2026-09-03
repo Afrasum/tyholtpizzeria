@@ -836,27 +836,38 @@ form.inline { display: inline; }
 /*
  * Star vendt mot rommet. Kun numre — navn hoerer pa etiketten og i admin,
  * ikke pa en skjerm full av fremmede.
+ *
+ * To spalter, med vilje ulikt vektet: «Klar» er det folk skanner etter fra
+ * andre siden av rommet, sa den far plassen og tapelappene. «Under arbeid»
+ * er beroligende informasjon — nummeret ditt er inne — ikke handling, sa den
+ * er dempet og mindre.
  */
 
 body.skjerm { background: var(--sot); }
+
 .skjerm-side {
 	min-height: 100svh;
-	display: flex;
-	flex-direction: column;
+	display: grid;
+	grid-template-rows: 1fr auto;
+	gap: clamp(1rem, 2.5vh, 2rem);
 	padding: clamp(1.25rem, 3vw, 2.5rem);
 }
-.skjerm-side h1 {
+
+.spalte { display: flex; flex-direction: column; min-height: 0; }
+
+.spalte h2 {
 	font-family: var(--mono);
-	font-size: clamp(.75rem, 1.4vw, 1rem);
 	letter-spacing: .28em;
 	text-transform: uppercase;
-	color: var(--paa-sot-svak);
 	font-weight: 400;
-	margin: 0 0 clamp(1rem, 3vh, 2.5rem);
-	padding-bottom: .9rem;
+	margin: 0 0 clamp(.75rem, 2vh, 1.5rem);
+	padding-bottom: .8rem;
 	border-bottom: var(--strek);
 }
+.spalte-klar h2 { font-size: clamp(.75rem, 1.4vw, 1.05rem); color: var(--paa-sot); }
+.spalte-arbeid h2 { font-size: clamp(.625rem, 1vw, .8125rem); color: var(--paa-sot-svak); }
 
+/* Klare numre er tapelapper. Samme signatur som resten av systemet. */
 .numre {
 	list-style: none;
 	padding: 0;
@@ -867,7 +878,6 @@ body.skjerm { background: var(--sot); }
 	align-content: flex-start;
 	gap: clamp(.6rem, 1.5vw, 1.25rem);
 }
-/* Hvert klart nummer er en tapelapp. Samme signatur som resten. */
 .numre li {
 	font-family: var(--mono);
 	font-weight: 700;
@@ -887,36 +897,38 @@ body.skjerm { background: var(--sot); }
 	to   { clip-path: inset(0 0 0 0);   transform: none; }
 }
 
+/* Under arbeid: ren tekst, ingen tape. Skillet i form sier at disse ikke
+ * skal hentes ennaa — man trenger ikke lese teksten for a se det. */
+.numre-sma {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: clamp(.4rem, 1.2vw, 1rem) clamp(.8rem, 2vw, 1.75rem);
+}
+.numre-sma li {
+	font-family: var(--mono);
+	font-weight: 700;
+	font-size: clamp(1.75rem, 4.5vw, 3.25rem);
+	line-height: 1;
+	letter-spacing: -0.02em;
+	color: var(--paa-sot-svak);
+}
+
 .skjerm-side .tom {
 	font-family: var(--mono);
 	font-size: clamp(1rem, 2.5vw, 1.5rem);
 	letter-spacing: .16em;
 	text-transform: uppercase;
 	color: var(--paa-sot-svak);
-	margin: auto;
+	margin: auto auto auto 0;
 }
-
-.underveis {
-	margin-top: clamp(1rem, 3vh, 2rem);
-	padding-top: 1rem;
-	border-top: var(--strek);
-}
-.underveis h2 {
+.skjerm-side .tom-liten {
 	font-family: var(--mono);
-	font-size: clamp(.625rem, 1.1vw, .8125rem);
-	letter-spacing: .22em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	font-weight: 400;
-	margin: 0 0 .6rem;
-}
-.numre-sma { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .5rem .9rem; }
-.numre-sma li {
-	font-family: var(--mono);
-	font-weight: 700;
-	font-size: clamp(1.5rem, 3.5vw, 2.75rem);
-	line-height: 1;
-	color: var(--paa-sot-svak);
+	font-size: clamp(1.25rem, 3vw, 2rem);
+	color: var(--sot-kant);
+	margin: 0;
 }
 
 /* ── Store skjermer ─────────────────────────────────────────────────────── */
@@ -926,6 +938,20 @@ body.skjerm { background: var(--sot); }
 	.menyrett { grid-template-columns: 3.25rem 1fr; }
 	.menyrett .kode { font-size: 2.35rem; }
 	.styring { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Landskap pa en TV: spaltene side ved side, klar-spalten dobbelt sa bred. */
+@media (min-width: 52rem) and (orientation: landscape) {
+	.skjerm-side {
+		grid-template-rows: 1fr;
+		grid-template-columns: 2fr 1fr;
+		gap: clamp(1.5rem, 3vw, 3rem);
+	}
+	.spalte-arbeid {
+		border-left: var(--strek);
+		padding-left: clamp(1.25rem, 2.5vw, 2.5rem);
+	}
+	.numre-sma { align-content: flex-start; }
 }
 
 @media (min-width: 60rem) {
