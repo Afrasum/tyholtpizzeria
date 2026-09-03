@@ -383,3 +383,53 @@ def test_kodebokstaven_paa_menyen_matcher_etiketten(tmp_path, monkeypatch):
     with db.kobling() as kob:
         koder = {r["navn"]: r["kode"] for r in meny.full_meny(kob)}
     assert koder == {"Margherita": "M", "Skinke": "S", "Hvit pizza med pære": "P"}
+
+
+def test_vipps_lenken_utledes_riktig_fra_nummeret(tmp_path, monkeypatch):
+    """Verifisert mot de seks ekte lenkene vi fikk oppgitt."""
+    _oppsett(tmp_path, monkeypatch)
+    from app.innstillinger import vipps_url
+
+    fasit = {
+        "40166715": "https://qr.vipps.no/28/2/01/031/4740166715?v=1",
+        "93604144": "https://qr.vipps.no/28/2/01/031/4793604144?v=1",
+        "90214070": "https://qr.vipps.no/28/2/01/031/4790214070?v=1",
+        "95369058": "https://qr.vipps.no/28/2/01/031/4795369058?v=1",
+        "90831803": "https://qr.vipps.no/28/2/01/031/4790831803?v=1",
+        "41783544": "https://qr.vipps.no/28/2/01/031/4741783544?v=1",
+    }
+    for nummer, forventet in fasit.items():
+        assert vipps_url(nummer) == forventet, nummer
+
+    # Toleranse for hvordan folk skriver nummeret.
+    assert vipps_url("401 66 715") == fasit["40166715"]
+    assert vipps_url("+4740166715") == fasit["40166715"]
+    assert vipps_url("4740166715") == fasit["40166715"]
+
+    # Soppel skal gi tom streng, ikke en lenke til feil person.
+    assert vipps_url("123") == ""
+    assert vipps_url("") == ""
+
+
+def test_bytte_av_mottaker_slaar_gjennom(tmp_path, monkeypatch):
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import innstillinger
+
+    with db.kobling() as kob:
+        liste = innstillinger.mottakere(kob)
+    assert [m["navn"] for m in liste] == [
+        "Afras", "Torkil", "Kristian", "Andreas", "Tobias", "Morten"
+    ]
+
+    # Uten valg: forste i lista, sa kvitteringen aldri staar tom.
+    with db.kobling() as kob:
+        assert innstillinger.aktiv_mottaker(kob)["navn"] == "Afras"
+
+    kristian = next(m for m in liste if m["navn"] == "Kristian")
+    innstillinger.sett("vipps_mottaker_id", str(kristian["id"]))
+
+    with db.kobling() as kob:
+        alle = innstillinger.alle(kob)
+    assert alle["vipps_navn"] == "Kristian"
+    assert alle["vipps_nummer"] == "90214070"
+    assert alle["vipps_url"] == "https://qr.vipps.no/28/2/01/031/4790214070?v=1"

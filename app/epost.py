@@ -25,18 +25,17 @@ def _kroner(ore: int) -> str:
     return f"{ore // 100} kr"
 
 
-def _vipps(kob) -> tuple[str, str]:
-    rader = {
-        r["nokkel"]: r["verdi"]
-        for r in kob.execute(
-            "SELECT nokkel, verdi FROM innstilling WHERE nokkel IN"
-            " ('vipps_navn', 'vipps_nummer')"
-        )
-    }
-    return rader.get("vipps_navn", ""), rader.get("vipps_nummer", "")
+def _vipps(kob) -> tuple[str, str, str]:
+    from . import innstillinger  # noqa: PLC0415 — unngår sirkulær import
+
+    aktiv = innstillinger.aktiv_mottaker(kob)
+    if aktiv is None:
+        return "", "", ""
+    return aktiv["navn"], aktiv["nummer"], aktiv["url"]
 
 
-def _bygg(mal: str, ordre, linjer, vipps_navn: str, vipps_nummer: str) -> tuple[str, str]:
+def _bygg(mal: str, ordre, linjer, vipps_navn: str, vipps_nummer: str,
+          vipps_url: str) -> tuple[str, str]:
     nummer = ordre["dagsnummer"]
     varer = "\n".join(
         f"  {l['antall']} x {l['navn_snapshot']}" for l in linjer
@@ -53,8 +52,12 @@ Vi har fått bestillingen din.
 
   Å betale: {_kroner(ordre['total_ore'])}
 
-Betal med Vipps til {vipps_nummer} ({vipps_navn}), og skriv {nummer}
-som melding. Vis Vipps-betalingen når du henter.
+Betal med Vipps:
+
+  {vipps_url}
+
+Til {vipps_navn} ({vipps_nummer}). Skriv {nummer} som melding, og vis
+betalingen når du henter.
 
 Vi roper opp nummeret ditt når pizzaen er klar.
 
@@ -83,14 +86,14 @@ def send(ordre_id: int, mal: str) -> None:
         pakke = med_linjer(kob, ordre_id)
         if pakke is None:
             raise ValueError(f"ordre {ordre_id} finnes ikke")
-        vipps_navn, vipps_nummer = _vipps(kob)
+        vipps_navn, vipps_nummer, vipps_url = _vipps(kob)
 
     ordre, linjer = pakke["ordre"], pakke["linjer"]
     if not ordre["epost"]:
         logg.info("ordre %s har ingen e-post, hopper over", ordre_id)
         return
 
-    emne, kropp = _bygg(mal, ordre, linjer, vipps_navn, vipps_nummer)
+    emne, kropp = _bygg(mal, ordre, linjer, vipps_navn, vipps_nummer, vipps_url)
 
     if not config.SMTP_VERT:
         logg.info(

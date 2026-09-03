@@ -62,6 +62,7 @@ def oversikt(
     request: Request,
     slettet: int | None = None,
     nullstill: str = "",
+    vipps: str = "",
     _=Depends(auth.krev),
 ):
     with kobling() as kob:
@@ -100,6 +101,9 @@ def oversikt(
                 "gammel_etter": ordrer.GAMMEL_ETTER_MIN,
                 "slettet": slettet,
                 "nullstill_avvist": nullstill == "avvist",
+                "mottakere": innstillinger.mottakere(kob),
+                "aktiv_mottaker": innstillinger.aktiv_mottaker(kob),
+                "vipps_ugyldig": vipps == "ugyldig",
             },
         )
 
@@ -197,13 +201,22 @@ def bytt_stengt(stengt: str = Form("0"), _=Depends(auth.krev)):
 
 
 @ruter.post("/vipps")
-def endre_vipps(
-    vipps_navn: str = Form(""), vipps_nummer: str = Form(""), _=Depends(auth.krev)
+def velg_vipps(mottaker_id: str = Form(""), _=Depends(auth.krev)):
+    """Bytt hvem som tar imot betalingen. Slår gjennom med én gang."""
+    innstillinger.sett("vipps_mottaker_id", mottaker_id.strip())
+    return RedirectResponse("/admin", status_code=303)
+
+
+@ruter.post("/vipps/ny")
+def ny_vipps(
+    navn: str = Form(""), nummer: str = Form(""), _=Depends(auth.krev)
 ):
-    """Vipps-mottakeren skal kunne rulleres — det var et uttalt krav."""
-    innstillinger.sett_mange(
-        {"vipps_navn": vipps_navn.strip(), "vipps_nummer": vipps_nummer.strip()}
-    )
+    """Legg til en mottaker. Nummeret må gi en gyldig betalingslenke."""
+    navn = navn.strip()
+    reint = "".join(t for t in nummer if t.isdigit())
+    if not navn or not innstillinger.vipps_url(reint):
+        return RedirectResponse("/admin?vipps=ugyldig", status_code=303)
+    innstillinger.legg_til_mottaker(navn, reint)
     return RedirectResponse("/admin", status_code=303)
 
 

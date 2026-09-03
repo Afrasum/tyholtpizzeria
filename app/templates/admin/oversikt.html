@@ -166,19 +166,41 @@
       <small>Låser den seg: skru den av og på. Køen skriver seg ut selv.</small>
     </div>
 
-    <div class="styringsboks">
-      <h3>Vipps-mottaker</h3>
+    <div class="styringsboks vipps-boks">
+      <h3>Hvem tar imot betaling</h3>
+      {% if vipps_ugyldig %}<p class="naa">Trenger navn og et gyldig 8-sifret nummer.</p>{% endif %}
+
       <form method="post" action="/admin/vipps">
-        <label>
-          <span class="navn-paa-felt">Navn</span>
-          <input type="text" name="vipps_navn" value="{{ innst.vipps_navn }}">
-        </label>
-        <label>
-          <span class="navn-paa-felt">Nummer</span>
-          <input type="text" name="vipps_nummer" value="{{ innst.vipps_nummer }}">
-        </label>
-        <button type="submit" class="knapp">Lagre</button>
+        <ul class="mottakerliste">
+          {% for m in mottakere %}
+          <li>
+            <label class="mottaker {% if aktiv_mottaker and m.id == aktiv_mottaker.id %}valgt{% endif %}">
+              <input type="radio" name="mottaker_id" value="{{ m.id }}"
+                     {% if aktiv_mottaker and m.id == aktiv_mottaker.id %}checked{% endif %}>
+              <span class="m-navn">{{ m.navn }}</span>
+              <span class="m-nummer mono">{{ m.nummer }}</span>
+            </label>
+          </li>
+          {% endfor %}
+        </ul>
+        <button type="submit" class="knapp primar">Bytt mottaker</button>
       </form>
+
+      <details class="legg-til-mottaker">
+        <summary>Legg til noen</summary>
+        <form method="post" action="/admin/vipps/ny">
+          <label>
+            <span class="navn-paa-felt">Navn</span>
+            <input type="text" name="navn" autocomplete="off">
+          </label>
+          <label>
+            <span class="navn-paa-felt">Telefonnummer</span>
+            <input type="text" name="nummer" inputmode="numeric" autocomplete="off">
+          </label>
+          <button type="submit" class="knapp">Legg til</button>
+        </form>
+      </details>
+
       <small>Slår gjennom på kvittering og e-post med én gang.</small>
     </div>
 

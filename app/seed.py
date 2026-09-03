@@ -106,11 +106,20 @@ SALGSDAGER: tuple[tuple[str, str, str], ...] = (
 )
 
 INNSTILLINGER: dict[str, str] = {
-    "vipps_navn": "Afras Mansoor",
-    "vipps_nummer": "40166715",
     "manuelt_stengt": "0",
     "stedsnavn": "Tyholt Pizzeria",
 }
+
+# Hvem som kan ta imot betaling. Rekkefolgen er den de vises i i admin.
+# Betalingslenken lagres ikke - den utledes fra nummeret.
+VIPPS_MOTTAKERE: tuple[tuple[str, str], ...] = (
+    ("Afras", "40166715"),
+    ("Torkil", "93604144"),
+    ("Kristian", "90214070"),
+    ("Andreas", "95369058"),
+    ("Tobias", "90831803"),
+    ("Morten", "41783544"),
+)
 
 
 def _ingrediens(kob: sqlite3.Connection, navn: str, koder: list[str],
@@ -179,6 +188,17 @@ def kjor() -> None:
                     apner = excluded.apner, stenger = excluded.stenger
                 """,
                 (dato, apner, stenger),
+            )
+
+        for i, (navn, nummer) in enumerate(VIPPS_MOTTAKERE):
+            kob.execute(
+                """
+                INSERT INTO vipps_mottaker (navn, nummer, rekkefolge)
+                VALUES (?, ?, ?)
+                ON CONFLICT(nummer) DO UPDATE SET
+                    navn = excluded.navn, rekkefolge = excluded.rekkefolge
+                """,
+                (navn, nummer, i),
             )
 
         for nokkel, verdi in INNSTILLINGER.items():

@@ -524,22 +524,59 @@ input::placeholder { color: var(--paa-sot-svak); }
 	background: linear-gradient(var(--sot-hev), var(--sot-hev)) padding-box;
 	margin-bottom: 1.5rem;
 }
-.betaling .vipps-nummer {
+.betaling .belop {
 	font-family: var(--mono);
-	font-size: 1.5rem;
+	font-size: 2rem;
 	font-weight: 700;
-	letter-spacing: .02em;
-	margin: .2rem 0 .1rem;
-	color: var(--gul);
+	letter-spacing: -0.02em;
+	margin: .1rem 0 0;
+	color: var(--paa-sot);
 }
-.betaling .vipps-navn {
+.betaling .til {
 	font-family: var(--mono);
 	font-size: .75rem;
 	letter-spacing: .1em;
 	text-transform: uppercase;
 	color: var(--paa-sot-svak);
-	margin: 0 0 .9rem;
+	margin: 0 0 1rem;
 }
+
+/* Hovedhandlingen pa kvitteringen. Apner Vipps direkte med belop og
+ * mottaker utfylt — kunden skal bare skrive nummeret sitt som melding. */
+.vipps-knapp {
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	padding: 1rem;
+	margin-bottom: .9rem;
+	font-family: var(--skilt);
+	font-size: 1.0625rem;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	color: #14100c;
+	background: var(--gul);
+	border-radius: var(--tape-radius);
+	min-height: 3.25rem;
+}
+.vipps-knapp:hover { background: #f2c93b; }
+.vipps-knapp:active { transform: translateY(1px); }
+
+.melding-hint { margin: 0 0 1rem; font-size: .9375rem; line-height: 1.5; }
+
+.vipps-nummer-linje {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: .5rem;
+	margin: 0 0 .75rem;
+	padding-top: .85rem;
+	border-top: var(--strek);
+	font-size: .875rem;
+	color: var(--paa-sot-svak);
+}
+.vipps-nummer-linje .mono { color: var(--paa-sot); font-size: .9375rem; }
+.knapp.liten { min-height: 2.25rem; padding: .35rem .6rem; font-size: .625rem; }
+
 .betaling p { margin: 0 0 .5rem; font-size: .9375rem; line-height: 1.5; }
 .betaling .melding-kode {
 	font-family: var(--mono);
@@ -730,6 +767,36 @@ form.inline { display: inline; }
 }
 .styringsboks small { display: block; margin-top: .5rem; font-size: .75rem; color: var(--paa-sot-svak); line-height: 1.5; }
 .styringsboks .naa { font-family: var(--mono); font-size: .8125rem; margin: 0 0 .7rem; }
+
+/* Mottakervelger: en liste man peker pa, ikke et felt man skriver i. Ingen
+ * skal taste attensifrede nummer mens det staar folk i kassa. */
+.mottakerliste { list-style: none; padding: 0; margin: 0 0 .8rem; display: grid; gap: .3rem; }
+.mottaker {
+	display: flex;
+	align-items: center;
+	gap: .6rem;
+	padding: .55rem .7rem;
+	border: 1px solid var(--sot-kant);
+	border-radius: var(--tape-radius);
+	cursor: pointer;
+	margin: 0;
+}
+.mottaker:hover { border-color: var(--paa-sot-svak); }
+.mottaker.valgt { border-color: var(--gul); background: rgba(232,190,42,.08); }
+.mottaker input { accent-color: var(--gul); width: 1.1rem; height: 1.1rem; flex: none; }
+.mottaker .m-navn { font-weight: 600; font-size: .9375rem; }
+.mottaker .m-nummer { margin-left: auto; font-size: .75rem; color: var(--paa-sot-svak); }
+
+.legg-til-mottaker { margin: .8rem 0 0; }
+.legg-til-mottaker summary {
+	cursor: pointer;
+	font-family: var(--mono);
+	font-size: .625rem;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	color: var(--paa-sot-svak);
+}
+.legg-til-mottaker form { margin-top: .7rem; }
 
 .utsolgtliste { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
 .utsolgtliste li { display: flex; align-items: center; justify-content: space-between; gap: .6rem; font-size: .9375rem; }

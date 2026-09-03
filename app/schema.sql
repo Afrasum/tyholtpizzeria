@@ -136,6 +136,20 @@ CREATE TABLE IF NOT EXISTS jobb (
 CREATE INDEX IF NOT EXISTS idx_jobb_ko    ON jobb(type, status, id);
 CREATE INDEX IF NOT EXISTS idx_jobb_ordre ON jobb(ordre_id);
 
+-- ── Vipps-mottakere ─────────────────────────────────────────────────────────
+-- Hvem som tar imot betalingen skal kunne rulleres midt i en kveld. Egen
+-- tabell framfor to felt, fordi det er en LISTE man velger fra - da slipper
+-- man a skrive inn et attensifret nummer riktig mens det staar folk i kassa.
+--
+-- Betalingslenken lagres ikke: den er deterministisk ut fra nummeret, og et
+-- utledet felt kan ikke komme i utakt med kilden sin.
+CREATE TABLE IF NOT EXISTS vipps_mottaker (
+    id         INTEGER PRIMARY KEY,
+    navn       TEXT NOT NULL,
+    nummer     TEXT NOT NULL UNIQUE,
+    rekkefolge INTEGER NOT NULL DEFAULT 0
+);
+
 -- ── Innstillinger ───────────────────────────────────────────────────────────
 -- Nøkkel/verdi for det som må kunne endres uten deploy: Vipps-mottaker,
 -- manuell stengt-bryter, global spor-liste.

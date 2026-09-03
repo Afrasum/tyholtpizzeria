@@ -25,14 +25,26 @@
 
   <section class="betaling">
     <h2>Betal med Vipps</h2>
-    <p class="vipps-nummer mono" id="vipps-nummer">{{ innst.vipps_nummer }}</p>
-    <p class="vipps-navn">{{ innst.vipps_navn }}</p>
-    <p>
-      Beløp <span class="melding-kode">{{ ordre.total_ore | kroner }}</span>,
-      og skriv <span class="melding-kode">{{ ordre.dagsnummer }}</span> som melding.
+
+    <p class="belop mono">{{ ordre.total_ore | kroner }}</p>
+    <p class="til">til {{ innst.vipps_navn }}</p>
+
+    {% if innst.vipps_url %}
+    <a class="vipps-knapp" href="{{ innst.vipps_url }}">Åpne Vipps</a>
+    {% endif %}
+
+    <p class="melding-hint">
+      Skriv <span class="melding-kode">{{ ordre.dagsnummer }}</span> som melding,
+      så vet vi hvem du er.
     </p>
-    <button type="button" class="knapp" id="kopier-vipps"
-            data-nummer="{{ innst.vipps_nummer }}">Kopier nummeret</button>
+
+    <p class="vipps-nummer-linje">
+      Eller søk opp
+      <span class="mono" id="vipps-nummer">{{ innst.vipps_nummer }}</span>
+      <button type="button" class="knapp liten" id="kopier-vipps"
+              data-nummer="{{ innst.vipps_nummer }}">Kopier</button>
+    </p>
+
     <p class="vis-ved-henting">Vis betalingen når du henter.</p>
   </section>
 
