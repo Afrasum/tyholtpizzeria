@@ -4,12 +4,16 @@
 <main class="side kunde">
 
   <header class="topp">
-    <h1>{{ innst.stedsnavn }}</h1>
-    <p class="apningstid">Åpent 4. og 5. september, 15:00–00:00</p>
+    <h1 class="navn"><span>Tyholt</span><span class="to">Pizzeria</span></h1>
+    <ul class="fakta">
+      <li>4.–5. september</li>
+      <li>15:00–00:00</li>
+      <li>59 kr</li>
+    </ul>
   </header>
 
   {% if not aapent %}
-    <p class="varsel stengt">{{ grunn }} Du kan se på menyen, men ikke bestille nå.</p>
+    <p class="varsel stengt">{{ grunn }} Menyen står, men du kan ikke bestille akkurat nå.</p>
   {% endif %}
 
   {% if feil %}
@@ -19,34 +23,41 @@
   <form class="bestilling" method="post" action="/bestill">
 
     <section class="meny">
-      <h2>Meny</h2>
+      <h2>Menyen</h2>
+
       <ul class="menyliste">
         {% for rett in meny %}
-        <li class="menyrett {% if not rett.tilgjengelig %}utsolgt{% endif %}">
+        <li class="menyrett tape {% if not rett.tilgjengelig %}utsolgt{% endif %}">
+
+          {# Kodebokstaven er ikke pynt: det er nøyaktig den som blir printet
+             på etiketten som havner på pizzaesken din. #}
+          <span class="kode mono" aria-hidden="true">{{ rett.kode }}</span>
+
           <div class="rett-hode">
             <h3>{{ rett.navn }}</h3>
-            <span class="pris">{{ rett.pris_ore | kroner }}</span>
+            <span class="pris mono">{{ rett.pris_ore | kroner }}</span>
           </div>
-
-          <p class="beskrivelse">{{ rett.beskrivelse }}</p>
 
           <p class="ingredienser">{{ rett.ingredienser | join(", ") }}</p>
 
           {% if rett.inneholder %}
           <p class="allergener">
-            <strong>Inneholder:</strong>
-            {% for a in rett.inneholder %}{{ a.navn }}{% if a.presisering %} ({{ a.presisering }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+            <b>Inneholder</b>
+            {% for a in rett.inneholder %}{{ a.navn }}{% if not loop.last %} · {% endif %}{% endfor %}
           </p>
           {% endif %}
 
-          {% if rett.tilgjengelig and aapent %}
-          <label class="antall">
-            Antall
-            <input type="number" name="antall_{{ rett.id }}" min="0" max="{{ maks }}"
-                   value="{{ forrige_antall.get(rett.id, 0) if forrige_antall else 0 }}">
-          </label>
-          {% elif not rett.tilgjengelig %}
-          <p class="utsolgt-merke">Utsolgt</p>
+          {% if not rett.tilgjengelig %}
+            <p class="utsolgt-merke">Utsolgt</p>
+          {% elif aapent %}
+            <div class="antall">
+              <span class="merkelapp" id="merke-{{ rett.id }}">Antall</span>
+              <button type="button" class="trekk-fra" aria-label="Én færre {{ rett.navn }}">−</button>
+              <input type="number" name="antall_{{ rett.id }}" min="0" max="{{ maks }}"
+                     inputmode="numeric" aria-labelledby="merke-{{ rett.id }}"
+                     value="{{ forrige_antall.get(rett.id, 0) if forrige_antall else 0 }}">
+              <button type="button" class="legg-til" aria-label="Én til {{ rett.navn }}">+</button>
+            </div>
           {% endif %}
         </li>
         {% endfor %}
@@ -54,48 +65,62 @@
 
       {% if spor %}
       <p class="spor">
-        <strong>Kan inneholde spor av:</strong>
-        {% for a in spor %}{{ a.navn }}{% if not loop.last %}, {% endif %}{% endfor %}.
-        Alt lages på samme kjøkken, så vi kan ikke garantere mot
-        krysskontaminering.
+        <b>Kan inneholde spor av</b>
+        {% for a in spor %}{{ a.navn }}{% if not loop.last %} · {% endif %}{% endfor %}.
+        Alt lages på samme kjøkken, så vi kan ikke garantere mot krysskontaminering.
       </p>
       {% endif %}
     </section>
 
     {% if aapent %}
     <section class="dine-opplysninger">
-      <h2>Dine opplysninger</h2>
+      <h2>Deg</h2>
 
       <label>
-        Navn
+        <span class="navn-paa-felt">Navn</span>
         <input type="text" name="kundenavn" required maxlength="60"
                autocomplete="name" value="{{ forrige_navn or '' }}">
-        <small>Vi roper opp navnet og nummeret ditt.</small>
+        <small>Vi roper opp nummeret og navnet ditt.</small>
       </label>
 
       <label>
-        E-post <span class="valgfritt">(valgfritt)</span>
+        <span class="navn-paa-felt">E-post <span class="valgfritt">— valgfritt</span></span>
         <input type="email" name="epost" maxlength="200"
                autocomplete="email" value="{{ forrige_epost or '' }}">
-        <small>Får du bekreftelse og beskjed når pizzaen er klar.</small>
+        <small>Du får bestillingen på e-post, og beskjed når pizzaen er klar.</small>
       </label>
 
       <p class="betalingslofte">
-        Betaling skjer med Vipps til
-        <strong>{{ innst.vipps_nummer }}</strong> ({{ innst.vipps_navn }}).
-        Du får nummeret ditt med én gang, og betaler før du henter.
+        Du betaler med Vipps til <b>{{ innst.vipps_nummer }}</b>
+        ({{ innst.vipps_navn }}). Nummeret ditt kommer med én gang — du betaler
+        før du henter.
       </p>
 
       <label class="lofte">
         <input type="checkbox" name="lofte" required>
-        Jeg bestiller for å hente, og betaler med Vipps.
+        <span>Jeg henter selv, og betaler med Vipps.</span>
       </label>
 
       <button type="submit" class="bestill-knapp">Send bestilling</button>
-      <p class="maks-merknad">Maks {{ maks }} pizzaer per bestilling.</p>
+      <p class="maks-merknad">Maks {{ maks }} pizzaer per bestilling</p>
     </section>
     {% endif %}
 
   </form>
 </main>
+{% endblock %}
+
+{% block skript %}
+<script>
+// Pluss/minus rundt et ekte number-felt: virker uten JS, bedre med.
+document.querySelectorAll(".antall").forEach(rad => {
+  const felt = rad.querySelector("input");
+  const juster = n => {
+    const min = +felt.min || 0, maks = +felt.max || 99;
+    felt.value = Math.min(maks, Math.max(min, (+felt.value || 0) + n));
+  };
+  rad.querySelector(".trekk-fra").addEventListener("click", () => juster(-1));
+  rad.querySelector(".legg-til").addEventListener("click", () => juster(1));
+});
+</script>
 {% endblock %}

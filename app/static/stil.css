@@ -546,6 +546,21 @@ input::placeholder { color: var(--paa-sot-svak); }
 	font-weight: 700;
 	color: var(--paa-sot);
 }
+.betaling .knapp { margin: .35rem 0 .75rem; }
+.vis-ved-henting { margin: 0; font-size: .875rem; color: var(--paa-sot-svak); }
+
+.epost-kvittering {
+	margin: 0;
+	padding: .9rem 1rem;
+	border: var(--strek);
+	border-radius: var(--tape-radius);
+	background: var(--sot-hev);
+	font-size: .875rem;
+	line-height: 1.55;
+	color: var(--paa-sot-svak);
+}
+.epost-kvittering b { color: var(--paa-sot); font-family: var(--mono); font-size: .8125rem; }
+
 .tips {
 	font-family: var(--mono);
 	font-size: .625rem;

@@ -37,6 +37,10 @@ def full_meny(kob: sqlite3.Connection, bare_tilgjengelige: bool = False) -> list
                 "id": rad["id"],
                 "slug": rad["slug"],
                 "navn": rad["navn"],
+                # Kodebokstaven pa kundesida MA komme herfra, ikke fra navnet:
+                # «Hvit pizza med pære» ville gitt H, mens etiketten sier P.
+                "etikettnavn": rad["etikettnavn"],
+                "kode": rad["etikettnavn"][:1].upper(),
                 "beskrivelse": rad["beskrivelse"],
                 "pris_ore": rad["pris_ore"],
                 "pris_kr": rad["pris_ore"] // 100,

@@ -368,3 +368,18 @@ def test_nullstilling_sletter_ordrer_linjer_og_jobber(tmp_path, monkeypatch):
 
     # Telleren starter pa nytt.
     assert opprett("Etter", None, [Onske(eid, 1)])["nummer"] == 1
+
+
+def test_kodebokstaven_paa_menyen_matcher_etiketten(tmp_path, monkeypatch):
+    """Bokstaven kunden ser MA vaere den som printes pa esken.
+
+    «Hvit pizza med pære» heter P pa etiketten. Utledet fra rettens navn ville
+    den blitt H, og da stemmer ikke systemet kunden ser med systemet kjokkenet
+    leser.
+    """
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import meny
+
+    with db.kobling() as kob:
+        koder = {r["navn"]: r["kode"] for r in meny.full_meny(kob)}
+    assert koder == {"Margherita": "M", "Skinke": "S", "Hvit pizza med pære": "P"}

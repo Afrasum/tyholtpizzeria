@@ -4,55 +4,98 @@
 {% block innhold %}
 <main class="side kvittering">
 
-  <p class="takk">Takk, {{ ordre.kundenavn }}!</p>
+  <p class="takk">Takk, {{ ordre.kundenavn.split()[0] }} — bestillingen er inne</p>
 
-  <div class="nummer-boks">
-    <span class="nummer-merkelapp">Ditt nummer</span>
-    <strong class="nummer" id="nummer">{{ ordre.dagsnummer }}</strong>
+  {# Faksimile av den fysiske etiketten som havner på esken din. Samme kode,
+     samme nummer, samme skrift som tapen kokken leser. #}
+  <div class="tape etikett-faksimile">
+    <span class="hovedkode">{{ linjer[0].etikett_snapshot[:1] | upper }}{{ ordre.dagsnummer }}</span>
+    <span class="bi">
+      <b>{{ ordre.kundenavn.split()[0] }}</b>
+      {% set antall = linjer | sum(attribute="antall") %}
+      {{ antall }} {% if antall == 1 %}pizza{% else %}pizzaer{% endif %}
+    </span>
+  </div>
+  <p class="etikett-under">Slik ser etiketten på esken din ut</p>
+
+  <div class="status-boks" data-status="{{ ordre.status }}">
+    <span class="lampe" aria-hidden="true"></span>
+    <span class="tekst" id="status">{{ statusnavn[ordre.status] }}</span>
   </div>
 
-  <p class="status" id="status">{{ statusnavn[ordre.status] }}</p>
+  <section class="betaling">
+    <h2>Betal med Vipps</h2>
+    <p class="vipps-nummer mono" id="vipps-nummer">{{ innst.vipps_nummer }}</p>
+    <p class="vipps-navn">{{ innst.vipps_navn }}</p>
+    <p>
+      Beløp <span class="melding-kode">{{ ordre.total_ore | kroner }}</span>,
+      og skriv <span class="melding-kode">{{ ordre.dagsnummer }}</span> som melding.
+    </p>
+    <button type="button" class="knapp" id="kopier-vipps"
+            data-nummer="{{ innst.vipps_nummer }}">Kopier nummeret</button>
+    <p class="vis-ved-henting">Vis betalingen når du henter.</p>
+  </section>
 
   <section class="bestilt">
     <h2>Bestilt</h2>
     <ul>
       {% for linje in linjer %}
-      <li>{{ linje.antall }} × {{ linje.navn_snapshot }}
-        <span class="linjepris">{{ (linje.pris_ore_snapshot * linje.antall) | kroner }}</span>
+      <li>
+        <span><span class="antall-kode mono">{{ linje.antall }}×</span>{{ linje.navn_snapshot }}</span>
+        <span class="mono">{{ (linje.pris_ore_snapshot * linje.antall) | kroner }}</span>
       </li>
       {% endfor %}
     </ul>
-    <p class="total"><strong>Å betale: {{ ordre.total_ore | kroner }}</strong></p>
+    <p class="total"><span>Å betale</span><span>{{ ordre.total_ore | kroner }}</span></p>
   </section>
 
-  <section class="betaling">
-    <h2>Betaling</h2>
-    <p>
-      Vipps til <strong>{{ innst.vipps_nummer }}</strong>
-      ({{ innst.vipps_navn }}).
+  {% if ordre.epost %}
+    <p class="epost-kvittering">
+      Bekreftelse er sendt til <b>{{ ordre.epost }}</b>. Du får en ny e-post
+      når pizzaen er klar.
     </p>
-    <p>
-      Skriv <strong>{{ ordre.dagsnummer }}</strong> som melding, og vis
-      betalingen når du henter.
-    </p>
-  </section>
-
-  <p class="tips">Ta et skjermbilde av denne siden.</p>
+  {% else %}
+    <p class="tips">Ta et skjermbilde av denne siden</p>
+  {% endif %}
 
 </main>
 {% endblock %}
 
 {% block skript %}
 <script>
-// Poller status slik at kunden ser «Klar til henting» uten aa laste paa nytt.
+// Poller status sa kunden ser «Klar til henting» uten a laste pa nytt.
 const ordreId = {{ ordre.id }};
+const boks = document.querySelector(".status-boks");
 setInterval(async () => {
   try {
     const r = await fetch(`/status/${ordreId}`);
     if (!r.ok) return;
     const d = await r.json();
-    if (d.finnes) document.getElementById("status").textContent = d.statusnavn;
+    if (!d.finnes) return;
+    document.getElementById("status").textContent = d.statusnavn;
+    boks.dataset.status = d.status;
   } catch (e) { /* nettverkshikk: proev igjen neste runde */ }
 }, 5000);
+
+// Kopier Vipps-nummeret. Ingen verifisert deeplenke finnes offentlig, sa
+// dette er den palitelige snarveien: ett trykk, sa er nummeret i utklippet.
+const kopier = document.getElementById("kopier-vipps");
+kopier.addEventListener("click", async () => {
+  const nummer = kopier.dataset.nummer;
+  try {
+    await navigator.clipboard.writeText(nummer);
+    kopier.textContent = "Kopiert";
+  } catch (e) {
+    // Eldre nettlesere og usikre kontekster: marker teksten i stedet.
+    const omraade = document.getElementById("vipps-nummer");
+    const utvalg = window.getSelection();
+    const rekke = document.createRange();
+    rekke.selectNodeContents(omraade);
+    utvalg.removeAllRanges();
+    utvalg.addRange(rekke);
+    kopier.textContent = "Merket — kopier selv";
+  }
+  setTimeout(() => { kopier.textContent = "Kopier nummeret"; }, 2500);
+});
 </script>
 {% endblock %}

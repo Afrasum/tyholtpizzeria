@@ -6,10 +6,10 @@
   {% if feil %}<p class="varsel feil">Feil passord.</p>{% endif %}
   <form method="post" action="/admin/logg-inn">
     <label>
-      Passord
+      <span class="navn-paa-felt">Passord</span>
       <input type="password" name="passord" required autofocus autocomplete="current-password">
     </label>
-    <button type="submit">Logg inn</button>
+    <button type="submit" class="bestill-knapp">Logg inn</button>
   </form>
 </main>
 {% endblock %}
