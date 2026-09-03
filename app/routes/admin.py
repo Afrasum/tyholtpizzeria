@@ -58,7 +58,12 @@ def logg_ut():
 
 
 @ruter.get("", response_class=HTMLResponse)
-def oversikt(request: Request, _=Depends(auth.krev)):
+def oversikt(
+    request: Request,
+    slettet: int | None = None,
+    nullstill: str = "",
+    _=Depends(auth.krev),
+):
     with kobling() as kob:
         rader = ordrer.for_admin(kob)
         dag = ordrer.aapen_salgsdag(kob)
@@ -93,6 +98,8 @@ def oversikt(request: Request, _=Depends(auth.krev)):
                 "kostatus": jobber.kostatus(),
                 "uverifiserte": allergener.uverifiserte_ingredienser(kob),
                 "gammel_etter": ordrer.GAMMEL_ETTER_MIN,
+                "slettet": slettet,
+                "nullstill_avvist": nullstill == "avvist",
             },
         )
 
@@ -198,6 +205,23 @@ def endre_vipps(
         {"vipps_navn": vipps_navn.strip(), "vipps_nummer": vipps_nummer.strip()}
     )
     return RedirectResponse("/admin", status_code=303)
+
+
+@ruter.post("/nullstill")
+def nullstill(bekreft: str = Form(""), _=Depends(auth.krev)):
+    """Slett alle ordrer for gjeldende salgsdag.
+
+    Krever at ordet SLETT skrives inn. Ingen nettleserdialog — de blokkerer
+    hele fanen, og da mister vi kontakten med siden.
+    """
+    if bekreft.strip().upper() != "SLETT":
+        return RedirectResponse("/admin?nullstill=avvist", status_code=303)
+    with kobling() as kob:
+        dag = ordrer.gjeldende_salgsdag(kob)
+    if dag is None:
+        return RedirectResponse("/admin", status_code=303)
+    antall = ordrer.slett_dagens_ordrer(dag["id"])
+    return RedirectResponse(f"/admin?slettet={antall}", status_code=303)
 
 
 @ruter.get("/printerstatus")

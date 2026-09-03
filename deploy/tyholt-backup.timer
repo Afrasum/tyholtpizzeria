@@ -1,10 +1,12 @@
 [Unit]
-Description=Sikkerhetskopier ordrebasen hvert kvarter
+Description=Sikkerhetskopier ordrebasen hvert minutt
 
 [Timer]
-OnBootSec=5min
-OnUnitActiveSec=15min
+OnBootSec=1min
+OnUnitActiveSec=1min
 Persistent=true
+# Uten dette starter alle timere pa hele minuttet samtidig.
+AccuracySec=5s
 
 [Install]
 WantedBy=timers.target

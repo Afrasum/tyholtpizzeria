@@ -152,3 +152,6 @@ body.skjerm { background: #14120e; color: #f7f2e7; }
 .numre-sma li { font-size: 2rem; font-weight: 600; }
 .underveis h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .08em; opacity: .6; }
 .skjerm-side .tom { font-size: 1.5rem; opacity: .5; }
+
+.styringsboks.farlig { border-color: #e0b4b0; background: #fffaf9; }
+.styringsboks.farlig h3 { color: var(--feil); }

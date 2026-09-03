@@ -109,12 +109,46 @@ def _manuelt_stengt(kob: sqlite3.Connection) -> bool:
 
 
 def kan_bestille(kob: sqlite3.Connection) -> tuple[bool, str]:
-    """(åpent, begrunnelse). Begrunnelsen vises til kunden når det er stengt."""
+    """(åpent, begrunnelse). Begrunnelsen vises til kunden når det er stengt.
+
+    ÉN sperre, og bare én: den manuelle bryteren i admin. Klokka er med vilje
+    IKKE med her.
+
+    Grunnen er drift. Var åpningstiden en kodet sperre, kunne vi ikke testet
+    dagen før, og et kvarter på overtid krevde SQL for å redde. Nå er
+    åpningstiden noe menneskene passer på, og systemet gjør som det blir
+    fortalt. Salgsdagene finnes fortsatt, men bare til nummerering.
+    """
     if _manuelt_stengt(kob):
         return False, "Vi har midlertidig stengt for bestilling."
-    if aapen_salgsdag(kob) is None:
-        return False, "Vi har stengt akkurat nå."
     return True, ""
+
+
+def salgsdag_for_ordre(kob: sqlite3.Connection, tid: datetime | None = None) -> sqlite3.Row:
+    """Salgsdagen en ny ordre skal nummereres under.
+
+    Rekkefølgen: åpen dag, ellers siste dag som har begynt, ellers lages en
+    dag for datoen i dag. Siste ledd gjør at testbestillinger dagen før havner
+    på sin egen teller og ikke spiser numre fra kvelden det gjelder.
+    """
+    dag = gjeldende_salgsdag(kob, tid)
+    if dag is not None:
+        return dag
+
+    nu = tid or datetime.now(config.TIDSSONE)
+    dato = nu.date().isoformat()
+    kob.execute(
+        """
+        INSERT INTO salgsdag (dato, apner, stenger, aktiv) VALUES (?, ?, ?, 1)
+        ON CONFLICT(dato) DO NOTHING
+        """,
+        (
+            dato,
+            nu.replace(hour=0, minute=0, second=0).isoformat(timespec="seconds"),
+            nu.replace(hour=23, minute=59, second=59).isoformat(timespec="seconds"),
+        ),
+    )
+    return kob.execute("SELECT * FROM salgsdag WHERE dato = ?", (dato,)).fetchone()
 
 
 # ── Opprettelse ─────────────────────────────────────────────────────────────
@@ -175,8 +209,7 @@ def opprett(
         if not aapent:
             raise Avvist(grunn)
 
-        dag = aapen_salgsdag(kob)
-        assert dag is not None  # kan_bestille har alt slått fast dette
+        dag = salgsdag_for_ordre(kob)
 
         # Les menyen inne i transaksjonen. Blir en pizza utsolgt i samme
         # øyeblikk, skal denne bestillingen se det.
@@ -352,6 +385,24 @@ def sett_betalt(ordre_id: int, betalt: bool, aktor: str = "admin") -> None:
             " VALUES (?, NULL, ?, ?, ?)",
             (ordre_id, "betalt" if betalt else "ikke_betalt", aktor, tid),
         )
+
+
+def slett_dagens_ordrer(salgsdag_id: int) -> int:
+    """Slett alle ordrer for en salgsdag. Returnerer antall slettede.
+
+    Finnes for å rydde etter lasttesting og prøvebestillinger. Linjer,
+    statuslogg og jobber følger med via ON DELETE CASCADE.
+
+    Destruktivt med vilje uten angremulighet — men backup-timeren tar en kopi
+    hvert minutt, så veien tilbake er å pakke ut siste fil fra
+    ~/data/tyholtpizzeria/backup/.
+    """
+    with transaksjon() as kob:
+        antall = kob.execute(
+            "SELECT COUNT(*) AS n FROM ordre WHERE salgsdag_id = ?", (salgsdag_id,)
+        ).fetchone()["n"]
+        kob.execute("DELETE FROM ordre WHERE salgsdag_id = ?", (salgsdag_id,))
+        return int(antall)
 
 
 # ── Oppslag ─────────────────────────────────────────────────────────────────

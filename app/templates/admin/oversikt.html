@@ -142,6 +142,22 @@
       <small>Vises på kvittering og i e-poster med én gang.</small>
     </div>
 
+    <div class="styringsboks farlig">
+      <h3>Nullstill dagen</h3>
+      {% if slettet is not none %}
+        <p class="varsel">{{ slettet }} ordrer slettet.</p>
+      {% endif %}
+      {% if nullstill_avvist %}
+        <p class="varsel feil">Du må skrive SLETT for å bekrefte.</p>
+      {% endif %}
+      <p><small>Sletter alle ordrer for denne salgsdagen. Til opprydding
+        etter prøvebestillinger og lasttesting. Backup tas hvert minutt.</small></p>
+      <form method="post" action="/admin/nullstill">
+        <label>Skriv SLETT <input type="text" name="bekreft" autocomplete="off"></label>
+        <button type="submit">Slett dagens ordrer</button>
+      </form>
+    </div>
+
     <div class="styringsboks">
       <h3>Printer</h3>
       <p id="printerstatus">sjekker …</p>

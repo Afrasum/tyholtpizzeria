@@ -341,3 +341,30 @@ def test_nummeret_er_delt_paa_tvers_av_pizzatyper(tmp_path, monkeypatch):
     assert last["nummer"] == 3, "samme ordre ma ha samme nummer"
     assert sorted(e["tekst"] for e in last["etiketter"]) == ["Margherita", "Pære"]
     assert sorted((e["indeks"], e["av"]) for e in last["etiketter"]) == [(1, 2), (2, 2)]
+
+
+def test_nullstilling_sletter_ordrer_linjer_og_jobber(tmp_path, monkeypatch):
+    """Opprydding etter lasttesting skal ikke etterlate loese jobber."""
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    from app import ordrer
+    from app.ordrer import Onske, opprett
+
+    eid = _meny_id(db, "margherita")
+    for _ in range(3):
+        opprett("Tester", "a@example.com", [Onske(eid, 2)])
+
+    with db.kobling() as kob:
+        dag = ordrer.gjeldende_salgsdag(kob)
+        assert kob.execute("SELECT COUNT(*) c FROM ordrelinje").fetchone()["c"] == 3
+        assert kob.execute("SELECT COUNT(*) c FROM jobb").fetchone()["c"] == 6
+
+    assert ordrer.slett_dagens_ordrer(dag["id"]) == 3
+
+    with db.kobling() as kob:
+        for tabell in ("ordre", "ordrelinje", "jobb", "statuslogg"):
+            n = kob.execute(f"SELECT COUNT(*) c FROM {tabell}").fetchone()["c"]
+            assert n == 0, f"{tabell} hadde {n} rader igjen"
+
+    # Telleren starter pa nytt.
+    assert opprett("Etter", None, [Onske(eid, 1)])["nummer"] == 1
