@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS ordre (
     kundenavn   TEXT NOT NULL,
     epost       TEXT,
     status      TEXT NOT NULL DEFAULT 'ny'
-                CHECK (status IN ('ny', 'i_produksjon', 'klar', 'levert', 'avbrutt')),
+                CHECK (status IN ('ny', 'i_produksjon', 'klar', 'levert', 'forlatt', 'avbrutt')),
     betalt      INTEGER NOT NULL DEFAULT 0 CHECK (betalt IN (0, 1)),
     total_ore   INTEGER NOT NULL CHECK (total_ore >= 0),
     notat       TEXT NOT NULL DEFAULT '',

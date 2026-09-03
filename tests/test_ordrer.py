@@ -256,3 +256,44 @@ def test_snapshot_beskytter_mot_prisendring_underveis(tmp_path, monkeypatch):
         ).fetchone()
     assert linje["pris_ore_snapshot"] == 5900
     assert ordre["total_ore"] == 5900
+
+
+def test_maks_10_pizzaer_per_bestilling(tmp_path, monkeypatch):
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    import pytest
+
+    from app.ordrer import Avvist, Onske, opprett
+
+    eid = _meny_id(db, "margherita")
+    assert opprett("Afras", None, [Onske(eid, 10)])["antall_etiketter"] == 10
+    with pytest.raises(Avvist, match="Maks 10"):
+        opprett("Afras", None, [Onske(eid, 11)])
+
+
+def test_forlatt_kan_settes_manuelt_og_angres(tmp_path, monkeypatch):
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    from app.ordrer import Onske, opprett, sett_status
+
+    res = opprett("Afras", None, [Onske(_meny_id(db, "margherita"), 1)])
+    oid = res["ordre_id"]
+    sett_status(oid, "klar")
+    assert sett_status(oid, "forlatt")["status"] == "forlatt"
+    # Kunden dukket opp likevel.
+    assert sett_status(oid, "levert")["status"] == "levert"
+
+
+def test_forlatt_fjerner_nummeret_fra_henteskjermen(tmp_path, monkeypatch):
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    from app import ordrer
+    from app.ordrer import Onske, opprett, sett_status
+
+    res = opprett("Afras", None, [Onske(_meny_id(db, "margherita"), 1)])
+    sett_status(res["ordre_id"], "klar")
+    with db.kobling() as kob:
+        assert ordrer.klare_numre(kob) == [res["nummer"]]
+    sett_status(res["ordre_id"], "forlatt")
+    with db.kobling() as kob:
+        assert ordrer.klare_numre(kob) == []

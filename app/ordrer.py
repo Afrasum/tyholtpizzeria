@@ -16,11 +16,16 @@ from .db import naa, transaksjon
 
 # Produksjonsløpet. Betaling er IKKE en status: den skjer på Vipps utenfor
 # systemet og bekreftes ved henting, så den lever i ordre.betalt.
+# «forlatt» er med som en tilstand admin kan sette selv, men ingenting flytter
+# en ordre dit automatisk. En automatisk overgang etter 5 minutter ville tatt
+# nummeret av henteskjermen mens kunden er på vei bort til kassen — se
+# GAMMEL_ETTER_MIN, som bare farger raden i admin.
 FLYT: dict[str, tuple[str, ...]] = {
     "ny": ("i_produksjon", "klar", "avbrutt"),
     "i_produksjon": ("klar", "avbrutt"),
-    "klar": ("levert", "i_produksjon", "avbrutt"),
+    "klar": ("levert", "forlatt", "i_produksjon", "avbrutt"),
     "levert": (),
+    "forlatt": ("klar", "levert"),
     "avbrutt": ("ny",),
 }
 
@@ -29,8 +34,16 @@ STATUSNAVN: dict[str, str] = {
     "i_produksjon": "I produksjon",
     "klar": "Klar til henting",
     "levert": "Levert",
+    "forlatt": "Forlatt",
     "avbrutt": "Avbrutt",
 }
+
+
+MAKS_PER_BESTILLING = 10
+
+# Etter så mange minutter som «klar» markeres ordren som gammel i admin.
+# Den blir IKKE flyttet automatisk — se merknaden i FLYT.
+GAMMEL_ETTER_MIN = 5
 
 
 class Avvist(Exception):
@@ -129,9 +142,10 @@ def opprett(
         raise Avvist("Handlekorgen er tom.")
 
     antall_pizzaer = sum(o.antall for o in onsker)
-    if antall_pizzaer > 20:
+    if antall_pizzaer > MAKS_PER_BESTILLING:
         raise Avvist(
-            "Mer enn 20 pizzaer i én bestilling — ta kontakt med oss direkte."
+            f"Maks {MAKS_PER_BESTILLING} pizzaer per bestilling. "
+            "Skal du ha flere, snakk med oss i kassen."
         )
 
     with transaksjon() as kob:

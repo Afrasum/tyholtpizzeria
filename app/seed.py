@@ -21,13 +21,49 @@ PRIS_ORE = 5900  # 59 kr flat for alle tre.
 # Deigen ligger som egen ingrediens på alle tre pizzaene. Uten den ville alle
 # tre blitt utledet som glutenfrie, siden ingrediensene vi fikk oppgitt bare
 # var toppingene.
+# verifisert = 0 betyr at ingen har lest allergenene av emballasjen ennå.
+# Notatene under beskriver hva varen ER, ut fra det som er oppgitt muntlig —
+# det er et godt utgangspunkt, men ikke en avlesning. Admin viser lista som en
+# sjekkliste, sortert etter hvor sannsynlig det er at pakka overrasker oss.
 INGREDIENSER: tuple[tuple[str, list[str], str, int], ...] = (
-    ("Pizzadeig", ["gluten"], "PLASSHOLDER: antatt hvetemel. Avklar durum/semulegryn.", 0),
-    ("Tomatsaus", [], "PLASSHOLDER: sjekk emballasje for sulfitt.", 0),
-    ("Revet ost", ["melk"], "PLASSHOLDER: mozzarella eller ferdigrevet blanding?", 0),
-    ("Skinke", ["melk"], "PLASSHOLDER: norsk kokt skinke har ofte melkeprotein eller soya som bindemiddel. LES PAKKA.", 0),
-    ("Crème fraîche", ["melk"], "PLASSHOLDER: sjekk om varianten har stabilisatorer.", 0),
-    ("Pære", [], "Fersk, i tynne skiver.", 0),
+    (
+        "Pizzadeig",
+        ["gluten"],
+        "Blanding av to typer hvetemel (pizza/pinsa-deig), vann, gjær, salt. "
+        "RISIKO: lav — begge meltyper er hvete uansett.",
+        0,
+    ),
+    (
+        "Tomatsaus",
+        [],
+        "Tomat, salt, pepper, sukker, olivenolje. "
+        "RISIKO: lav — sjekk likevel om hermetikken oppgir sulfitt.",
+        0,
+    ),
+    (
+        "Revet ost",
+        ["melk"],
+        "First Price pizzatopping, ferdigrevet. Melk er sikkert. "
+        "RISIKO: middels — ferdigrevet ost har ofte potetstivelse, og noen "
+        "blandinger inneholder mer enn ost. LES PAKKA.",
+        0,
+    ),
+    (
+        "Skinke",
+        ["melk"],
+        "Vanlig kokt skinke, salattopping. "
+        "RISIKO: HØY — norsk kokt skinke har ofte melkeprotein eller soya "
+        "som bindemiddel, og det står bare på baksiden. LES PAKKA FØRST.",
+        0,
+    ),
+    (
+        "Crème fraîche med krydder",
+        ["melk"],
+        "Crème fraîche rørt med krydder, brukt som hvit saus. Melk er sikkert. "
+        "RISIKO: lav–middels — sjekk krydderblandingen for sennep og selleri.",
+        0,
+    ),
+    ("Pære", [], "Fersk pære i tynne skiver. RISIKO: ingen.", 0),
 )
 
 # (slug, navn, etikettnavn, beskrivelse, ingrediensnavn, rekkefølge)
@@ -52,8 +88,8 @@ MENY: tuple[tuple[str, str, str, str, list[str], int], ...] = (
         "paere",
         "Hvit pizza med pære",
         "Pære",
-        "Crème fraîche-basert saus med tynne skiver pære.",
-        ["Pizzadeig", "Crème fraîche", "Revet ost", "Pære"],
+        "Hvit saus av crème fraîche med krydder, og tynne skiver pære.",
+        ["Pizzadeig", "Crème fraîche med krydder", "Revet ost", "Pære"],
         3,
     ),
 )
