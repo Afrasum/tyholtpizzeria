@@ -1,30 +1,42 @@
 #!/bin/sh
 # Sikkerhetskopi av ordrebasen. Kjores av tyholt-backup.timer hvert minutt.
 #
-# .backup i sqlite3 er trygg mot en base som skrives til samtidig - en ren
-# filkopi kan fange en halvskrevet WAL.
+# Bruker Pythons sqlite3.Connection.backup() framfor sqlite3-kommandoen.
+# Grunnen er konkret: sqlite3-CLI-en er IKKE installert pa rpi5, og med den
+# varianten gikk unitet "Finished ... successfully" hvert kvarter uten a
+# kopiere en eneste byte. Python-modulen ligger i venv-en vi alt har.
 #
-# Basen er noen titalls kB, sa en kopi tar millisekunder og komprimert fyller
-# den nesten ingenting. Vi beholder de 360 nyeste, altsa seks timer med
-# minuttkopier - mer enn nok til a spole forbi enhver tabbe pa en kveld.
+# .backup er trygg mot en base som skrives til samtidig - en ren filkopi kan
+# fange en halvskrevet WAL.
+#
+# Basen er noen titalls kB, sa en kopi tar millisekunder. Vi beholder de 360
+# nyeste, altsa seks timer med minuttkopier.
 #
 # Filnavnene sorterer kronologisk leksikografisk (base-YYYYmmdd-HHMMSS), sa
-# vi bruker find | sort framfor "ls -t". Det er ikke pedanteri: ls er aliaset
-# til eza pa utviklingsmaskinen, og eza tolker -t som et felt-argument.
+# vi bruker find | sort framfor "ls -t": ls er aliaset til eza pa
+# utviklingsmaskinen, og eza tolker -t som feltargument.
 
 set -eu
 
+REPO=$(cd "$(dirname "$0")/.." && pwd)
+PYTHON=$REPO/.venv/bin/python
 BASE=${TP_DB:-/home/afras/data/tyholtpizzeria/base.db}
 KATALOG=$(dirname "$BASE")/backup
 BEHOLD=360
 
-[ -f "$BASE" ] || exit 0
-mkdir -p "$KATALOG"
+if [ ! -x "$PYTHON" ]; then
+	echo "backup: finner ikke $PYTHON" >&2
+	exit 1
+fi
 
-LISTE=$(find "$KATALOG" -name 'base-*.db.gz' -type f 2>/dev/null | sort)
+# Ingen base ennaa er greit - appen har ikke startet forste gang.
+[ -f "$BASE" ] || exit 0
+
+mkdir -p "$KATALOG"
 
 # Hopp over hvis basen ikke er endret siden forrige kopi. Ellers ville en
 # stille kveld skrevet 360 identiske filer.
+LISTE=$(find "$KATALOG" -name 'base-*.db.gz' -type f 2>/dev/null | sort)
 if [ -n "$LISTE" ]; then
 	SISTE=$(printf '%s\n' "$LISTE" | tail -1)
 	if [ ! "$BASE" -nt "$SISTE" ]; then
@@ -33,7 +45,23 @@ if [ -n "$LISTE" ]; then
 fi
 
 MAL="$KATALOG/base-$(date +%Y%m%d-%H%M%S).db"
-sqlite3 "$BASE" ".backup '$MAL'"
+
+"$PYTHON" - "$BASE" "$MAL" <<'PY'
+import sqlite3
+import sys
+
+kilde, mal = sys.argv[1], sys.argv[2]
+# Skrivelaas tas ikke: backup() itererer over sider og gjentar seg selv hvis
+# basen endres underveis, sa bestillinger kan ga inn mens vi kopierer.
+inn = sqlite3.connect(f"file:{kilde}?mode=ro", uri=True)
+ut = sqlite3.connect(mal)
+try:
+    inn.backup(ut)
+finally:
+    ut.close()
+    inn.close()
+PY
+
 gzip -f "$MAL"
 
 # Rydd de eldste.
