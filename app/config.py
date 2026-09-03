@@ -32,9 +32,15 @@ PRINTER_PORT = os.environ.get("TP_PRINTER_PORT", "")
 LABELMAKER_STI = Path(
     os.environ.get("TP_LABELMAKER", ROT / "vendor" / "PT-P300BT" / "labelmaker.py")
 )
-# QR paa etiketten. Av som standard til vi har skannet en ekte en fra tape.
-QR_PA_ETIKETT = os.environ.get("TP_QR_PA_ETIKETT", "0") == "1"
-QR_URL = os.environ.get("TP_QR_URL", "TYHOLTPIZZERIA.AFRASUM.DEV")
+# QR paa etiketten. Verifisert skannbar fra tape 3. september.
+QR_PA_ETIKETT = os.environ.get("TP_QR_PA_ETIKETT", "1") == "1"
+# Store bokstaver med vilje: da holder «HTTPS://...» seg i QR-kodens
+# alfanumeriske modus (som har med : og / og A-Z), og koden blir versjon 2
+# med 25x25 moduler i stedet for versjon 3 med 29x29. Samme fysiske stoerrelse,
+# men 0,36 mm per modul framfor 0,31 - og det var forskjellen som gjorde at
+# den lot seg skanne. Skjema og vertsnavn er ikke versalfoelsomme, saa
+# telefonen aapner sida som normalt. Sma bokstaver ville tvunget byte-modus.
+QR_URL = os.environ.get("TP_QR_URL", "HTTPS://TYHOLTPIZZERIA.AFRASUM.DEV")
 PRINT_TIDSAVBRUDD = int(os.environ.get("TP_PRINT_TIDSAVBRUDD", "30"))
 PRINT_MAKS_FORSOK = int(os.environ.get("TP_PRINT_MAKS_FORSOK", "3"))
 
