@@ -116,7 +116,17 @@ class Printer:
     # ── Status ─────────────────────────────────────────────────────────────
 
     def _les_status(self, ser):
+        """Spør om status, og pass på at svaret vi leser faktisk er vårt.
+
+        reset_input_buffer() er ikke en forsiktighetsdetalj: printeren sender
+        FLERE statuspakker etter en utskrift (fase endret, printer, ferdig).
+        Leser vi bare én, blir resten liggende, og neste forespørsel plukker
+        opp en gammel pakke i stedet for sitt eget svar. Da er vi ute av synk
+        med printeren, og den låser seg med err 0x4. Det var grunnen til at
+        et par etiketter gikk gjennom for så å stoppe.
+        """
         _last_vendor()
+        ser.reset_input_buffer()
         _labelmaker.reset_printer(ser)
         ser.write(_ptcbp.serialize_control("get_status"))
         raa = ser.read(32)
@@ -125,6 +135,34 @@ class Printer:
                 f"printeren svarte med {len(raa)} av 32 byte — lenken er nede"
             )
         return _ptstatus.unpack_status(raa)
+
+    def _drener(self, ser, tidsavbrudd: float = 45.0) -> None:
+        """Les ut alle statuspakkene printeren sender under og etter en jobb.
+
+        Vi er ferdige når det har vært stille i STILLE_NOK sekunder. Da har
+        tapen kommet ut, printeren er tilbake i ro, og bufferet er tomt til
+        neste jobb.
+        """
+        STILLE_NOK = 2.0
+        frist = time.monotonic() + tidsavbrudd
+        sist_hort = time.monotonic()
+
+        while time.monotonic() < frist:
+            if ser.in_waiting >= 32:
+                raa = ser.read(32)
+                sist_hort = time.monotonic()
+                if len(raa) == 32:
+                    st = _ptstatus.unpack_status(raa)
+                    if st.err != 0:
+                        raise PrinterLaast(
+                            f"printeren meldte feil under print "
+                            f"(kode {hex(st.err)}). Skru den av og på, så "
+                            "skriver køen seg ut av seg selv."
+                        )
+                continue
+            if time.monotonic() - sist_hort >= STILLE_NOK:
+                return
+            time.sleep(0.1)
 
     def _vent_paa_klar(self, ser, tidsavbrudd: float = 25.0):
         """Poll til printeren er klar. Skiller mellom «travel» og «låst».
@@ -244,14 +282,8 @@ class Printer:
                     ser.write(linje)
                 ser.write(_ptcbp.serialize_control("print"))
 
-                svar = ser.read(32)
-                if len(svar) == 32:
-                    etter = _ptstatus.unpack_status(svar)
-                    if etter.err != 0:
-                        raise PrinterLaast(
-                            f"printeren meldte feil under print "
-                            f"(kode {hex(etter.err)}). Skru den av og på."
-                        )
+                # Les ut ALLE pakkene, ikke bare den forste. Se _drener.
+                self._drener(ser)
                 self._sist_brukt = time.monotonic()
 
             except PrinterFeil:
@@ -261,11 +293,6 @@ class Printer:
             except Exception as e:  # noqa: BLE001
                 self._lukk()
                 raise PrinterFeil(f"{type(e).__name__}: {e}") from e
-
-        # La tapen komme helt ut før neste jobb tar låsen. Uten dette kommer
-        # neste strimmel inn mens denne mates, og da svarer printeren «ikke
-        # klar» — som var halve problemet i drift.
-        time.sleep(config.PRINT_HVILE)
 
         logg.info(
             "strimmel printet: nr %s, %s etikett(er): %s",
