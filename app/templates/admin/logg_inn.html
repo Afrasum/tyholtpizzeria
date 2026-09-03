@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block tittel %}Logg inn{% endblock %}
+{% block innhold %}
+<main class="side logg-inn">
+  <h1>Admin</h1>
+  {% if feil %}<p class="varsel feil">Feil passord.</p>{% endif %}
+  <form method="post" action="/admin/logg-inn">
+    <label>
+      Passord
+      <input type="password" name="passord" required autofocus autocomplete="current-password">
+    </label>
+    <button type="submit">Logg inn</button>
+  </form>
+</main>
+{% endblock %}

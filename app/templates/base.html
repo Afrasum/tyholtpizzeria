@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block tittel %}{{ innst.stedsnavn if innst else "Tyholt Pizzeria" }}{% endblock %}</title>
+<link rel="stylesheet" href="/static/stil.css">
+{% block hode %}{% endblock %}
+</head>
+<body class="{% block kropp_klasse %}{% endblock %}">
+{% block innhold %}{% endblock %}
+{% block skript %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block tittel %}Klar til henting{% endblock %}
+{% block kropp_klasse %}skjerm{% endblock %}
+
+{% block innhold %}
+<main class="skjerm-side">
+  <h1>Klar til henting</h1>
+  <ul class="numre" id="numre">
+    {% for n in numre %}<li>{{ n }}</li>{% endfor %}
+  </ul>
+  {% if not numre %}<p class="tom" id="tom">Ingen klare ennå</p>{% endif %}
+
+  <section class="underveis">
+    <h2>Under arbeid</h2>
+    <ul class="numre-sma" id="underveis"></ul>
+  </section>
+</main>
+{% endblock %}
+
+{% block skript %}
+<script>
+// Kun numre — ingen navn. Skjermen staar vendt mot et rom fullt av fremmede.
+async function oppdater() {
+  try {
+    const r = await fetch("/skjerm/data");
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById("numre").innerHTML =
+      d.klare.map(n => `<li>${n}</li>`).join("");
+    document.getElementById("underveis").innerHTML =
+      d.i_produksjon.map(n => `<li>${n}</li>`).join("");
+    const tom = document.getElementById("tom");
+    if (tom) tom.style.display = d.klare.length ? "none" : "";
+  } catch (e) { /* nettverkshikk */ }
+}
+setInterval(oppdater, 3000);
+oppdater();
+</script>
+{% endblock %}

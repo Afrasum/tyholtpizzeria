@@ -1,0 +1,154 @@
+/* PLASSHOLDERSTIL.
+ *
+ * Denne fila er ment aa byttes ut. Den gjoer bare tre ting: leselig typografi,
+ * nok luft til aa se strukturen, og store nok trykkflater i admin til aa
+ * treffes med fete fingre midt i et rush. Klassenavnene i malene er stabile,
+ * saa du kan skrive ny CSS uten aa roere HTML-en.
+ */
+
+:root {
+	--tekst: #1c1a17;
+	--dempet: #6b645b;
+	--bakgrunn: #fdfaf5;
+	--kant: #ddd6c9;
+	--ok: #1f7a44;
+	--feil: #a3271f;
+	--varsel: #8a5a00;
+}
+
+* { box-sizing: border-box; }
+
+body {
+	margin: 0;
+	font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
+	color: var(--tekst);
+	background: var(--bakgrunn);
+}
+
+.side { max-width: 46rem; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+.side.admin { max-width: 76rem; }
+
+h1 { font-size: 1.8rem; margin: 0 0 .25rem; }
+h2 { font-size: 1.2rem; margin: 2rem 0 .5rem; }
+h3 { font-size: 1rem; margin: 0 0 .25rem; }
+
+a { color: inherit; }
+
+/* ── Varsler ────────────────────────────────────────────────────────────── */
+.varsel {
+	padding: .75rem 1rem;
+	border-left: 4px solid var(--varsel);
+	background: #fff8e8;
+	margin: 1rem 0;
+}
+.varsel.feil { border-color: var(--feil); background: #fdeeec; }
+.varsel.stengt { border-color: var(--dempet); background: #f2efe8; }
+
+/* ── Meny ───────────────────────────────────────────────────────────────── */
+.menyliste { list-style: none; padding: 0; margin: 0; }
+.menyrett {
+	border: 1px solid var(--kant);
+	border-radius: 6px;
+	padding: 1rem;
+	margin-bottom: .75rem;
+	background: #fff;
+}
+.menyrett.utsolgt { opacity: .55; }
+.rett-hode { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.pris { font-weight: 600; white-space: nowrap; }
+.beskrivelse { margin: .25rem 0; }
+.ingredienser, .allergener, .spor { font-size: .875rem; color: var(--dempet); margin: .25rem 0; }
+.allergener strong, .spor strong { color: var(--tekst); }
+.spor { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--kant); }
+.utsolgt-merke { font-weight: 600; color: var(--feil); margin: .5rem 0 0; }
+
+label { display: block; margin: .75rem 0; }
+label small { display: block; color: var(--dempet); font-size: .8125rem; }
+.valgfritt { color: var(--dempet); font-weight: 400; }
+
+input[type=text], input[type=email], input[type=password], input[type=number] {
+	font: inherit;
+	padding: .5rem;
+	border: 1px solid var(--kant);
+	border-radius: 4px;
+	width: 100%;
+	max-width: 22rem;
+	background: #fff;
+}
+input[type=number] { max-width: 6rem; }
+
+.antall { display: flex; align-items: center; gap: .5rem; margin-top: .75rem; }
+
+button {
+	font: inherit;
+	padding: .5rem .9rem;
+	border: 1px solid var(--kant);
+	border-radius: 4px;
+	background: #fff;
+	cursor: pointer;
+	min-height: 2.5rem;
+}
+button:hover { background: #f3efe6; }
+
+.bestill-knapp { font-size: 1.1rem; padding: .8rem 1.5rem; font-weight: 600; }
+.maks-merknad { font-size: .8125rem; color: var(--dempet); }
+.lofte { display: flex; gap: .5rem; align-items: flex-start; }
+.lofte input { width: auto; }
+
+/* ── Kvittering ─────────────────────────────────────────────────────────── */
+.nummer-boks { text-align: center; margin: 1.5rem 0; }
+.nummer-merkelapp { display: block; font-size: .875rem; color: var(--dempet); }
+.nummer { display: block; font-size: 5rem; line-height: 1; font-weight: 700; }
+.kvittering .status { text-align: center; font-size: 1.1rem; }
+.bestilt ul { list-style: none; padding: 0; }
+.bestilt li { display: flex; justify-content: space-between; padding: .25rem 0; border-bottom: 1px solid var(--kant); }
+.tips { color: var(--dempet); font-size: .875rem; }
+
+/* ── Admin ──────────────────────────────────────────────────────────────── */
+.admin-topp { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1rem; }
+.nokkeltall { display: flex; gap: 1rem; flex-wrap: wrap; color: var(--dempet); margin: 0; }
+.nokkeltall .solgt { font-weight: 600; color: var(--tekst); }
+.logg-ut { margin-left: auto; }
+
+.ordretabell { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+.ordretabell th, .ordretabell td {
+	text-align: left;
+	padding: .5rem .5rem;
+	border-bottom: 1px solid var(--kant);
+	vertical-align: top;
+}
+.ordretabell th { font-size: .8125rem; text-transform: uppercase; letter-spacing: .04em; color: var(--dempet); }
+.ordretabell .nr { font-size: 1.5rem; font-weight: 700; }
+.ordre.status-klar { background: #eef7f0; }
+.ordre.status-levert { opacity: .5; }
+.ordre.status-avbrutt, .ordre.status-forlatt { opacity: .5; text-decoration: line-through; }
+.ordre.gammel { background: #fff4de; }
+.gammel-merke { display: block; font-size: .8125rem; color: var(--varsel); font-weight: 600; }
+.sum { color: var(--dempet); font-size: .875rem; display: block; }
+
+form.inline { display: inline; }
+.handling button { margin: 0 .25rem .25rem 0; }
+.betalt button.ja { color: var(--ok); font-weight: 600; }
+.betalt button.nei { color: var(--feil); }
+.etiketter .feil { color: var(--feil); font-weight: 600; }
+
+.styring { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+.styringsboks { border: 1px solid var(--kant); border-radius: 6px; padding: 1rem; background: #fff; }
+.utsolgtliste { list-style: none; padding: 0; margin: 0; }
+.utsolgtliste li { padding: .35rem 0; }
+#printerstatus.ok { color: var(--ok); font-weight: 600; }
+#printerstatus.feil { color: var(--feil); font-weight: 600; }
+.ko { font-size: .8125rem; color: var(--dempet); }
+
+.allergen-sjekkliste ul { margin: .5rem 0 0; padding-left: 1.25rem; font-size: .875rem; }
+
+/* ── Henteskjerm ────────────────────────────────────────────────────────── */
+body.skjerm { background: #14120e; color: #f7f2e7; }
+.skjerm-side { padding: 2rem; text-align: center; }
+.skjerm-side h1 { font-size: 2.5rem; }
+.numre { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem 2rem; justify-content: center; }
+.numre li { font-size: 6rem; font-weight: 700; line-height: 1; }
+.numre-sma { list-style: none; padding: 0; display: flex; gap: 1rem; justify-content: center; opacity: .55; }
+.numre-sma li { font-size: 2rem; font-weight: 600; }
+.underveis h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .08em; opacity: .6; }
+.skjerm-side .tom { font-size: 1.5rem; opacity: .5; }

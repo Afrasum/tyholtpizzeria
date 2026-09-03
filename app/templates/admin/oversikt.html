@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block tittel %}Admin – {{ innst.stedsnavn }}{% endblock %}
+{% block kropp_klasse %}admin{% endblock %}
+
+{% block innhold %}
+<main class="side admin">
+
+  <header class="admin-topp">
+    <h1>Bestillinger</h1>
+    <p class="nokkeltall">
+      <span class="solgt">{{ solgt }} pizzaer i kveld</span>
+      {% if dag %}<span class="dag">Salgsdag {{ dag.dato }}</span>
+      {% else %}<span class="dag stengt">Ingen aktiv salgsdag</span>{% endif %}
+      <a href="/skjerm" target="_blank" class="skjermlenke">Åpne henteskjerm</a>
+    </p>
+    <form method="post" action="/admin/logg-ut" class="logg-ut">
+      <button type="submit">Logg ut</button>
+    </form>
+  </header>
+
+  {% if uverifiserte %}
+  <details class="varsel allergen-sjekkliste" open>
+    <summary><strong>Allergenlista er et utkast:</strong>
+      {{ uverifiserte | length }} ingredienser er ikke lest av emballasjen</summary>
+    <ul>
+      {% for i in uverifiserte %}
+      <li><strong>{{ i.navn }}</strong> — {{ i.notat }}
+        {% if i.brukt_i %}<em>(i {{ i.brukt_i }})</em>{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+
+  {% if feilede %}
+  <section class="varsel printfeil">
+    <h2>{{ feilede | length }} jobber feilet</h2>
+    <ul>
+      {% for j in feilede %}
+      <li>
+        {% if j.dagsnummer %}Nr {{ j.dagsnummer }} ({{ j.kundenavn }}){% else %}Jobb {{ j.id }}{% endif %}
+        — {{ j.type }}: {{ j.siste_feil }}
+        <form method="post" action="/admin/jobb/{{ j.id }}/paa-nytt" class="inline">
+          <button type="submit">Prøv igjen</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <table class="ordretabell">
+    <thead>
+      <tr>
+        <th>Nr</th><th>Navn</th><th>Bestilling</th><th>Status</th>
+        <th>Betalt</th><th>Etiketter</th><th>Handling</th>
+      </tr>
+    </thead>
+    <tbody id="ordrekropp">
+      {% for rad in rader %}
+      {% set o = rad.ordre %}
+      <tr class="ordre status-{{ o.status }} {% if rad.gammel %}gammel{% endif %}">
+        <td class="nr">{{ o.dagsnummer }}</td>
+        <td class="navn">{{ o.kundenavn }}</td>
+        <td class="varer">
+          {% for l in rad.linjer %}{{ l.antall }}× {{ l.navn_snapshot }}{% if not loop.last %}, {% endif %}{% endfor %}
+          <span class="sum">{{ o.total_ore | kroner }}</span>
+        </td>
+        <td class="status">
+          {{ statusnavn[o.status] }}
+          {% if rad.gammel %}
+          <span class="gammel-merke">klar i {{ rad.minutter }} min</span>
+          {% endif %}
+        </td>
+        <td class="betalt">
+          <form method="post" action="/admin/ordre/{{ o.id }}/betalt">
+            <input type="hidden" name="betalt" value="{{ 0 if o.betalt else 1 }}">
+            <button type="submit" class="{{ 'ja' if o.betalt else 'nei' }}">
+              {{ "Betalt" if o.betalt else "Ikke betalt" }}
+            </button>
+          </form>
+        </td>
+        <td class="etiketter">
+          {{ rad.print.ferdig or 0 }}/{{ rad.print.totalt or 0 }}
+          {% if rad.print.feilet %}<span class="feil">{{ rad.print.feilet }} feil</span>{% endif %}
+          <form method="post" action="/admin/ordre/{{ o.id }}/skriv-ut" class="inline">
+            <button type="submit">Skriv ut igjen</button>
+          </form>
+        </td>
+        <td class="handling">
+          {% for neste in flyt[o.status] %}
+          <form method="post" action="/admin/ordre/{{ o.id }}/status" class="inline">
+            <input type="hidden" name="ny" value="{{ neste }}">
+            <button type="submit" class="til-{{ neste }}">{{ statusnavn[neste] }}</button>
+          </form>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if not rader %}<p class="ingen">Ingen bestillinger ennå.</p>{% endif %}
+
+  <section class="styring">
+    <h2>Styring</h2>
+
+    <div class="styringsboks">
+      <h3>Åpen for bestilling</h3>
+      <p class="naa">{{ "Åpent" if aapent else grunn }}</p>
+      <form method="post" action="/admin/stengt">
+        <input type="hidden" name="stengt" value="{{ 0 if innst.manuelt_stengt == '1' else 1 }}">
+        <button type="submit">
+          {{ "Åpne igjen" if innst.manuelt_stengt == '1' else "Steng for bestilling" }}
+        </button>
+      </form>
+    </div>
+
+    <div class="styringsboks">
+      <h3>Utsolgt</h3>
+      <ul class="utsolgtliste">
+        {% for rett in meny %}
+        <li>
+          {{ rett.navn }}
+          <form method="post" action="/admin/meny/{{ rett.id }}/tilgjengelig" class="inline">
+            <input type="hidden" name="tilgjengelig" value="{{ 0 if rett.tilgjengelig else 1 }}">
+            <button type="submit">
+              {{ "Merk utsolgt" if rett.tilgjengelig else "Tilbake på menyen" }}
+            </button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="styringsboks">
+      <h3>Vipps-mottaker</h3>
+      <form method="post" action="/admin/vipps">
+        <label>Navn <input type="text" name="vipps_navn" value="{{ innst.vipps_navn }}"></label>
+        <label>Nummer <input type="text" name="vipps_nummer" value="{{ innst.vipps_nummer }}"></label>
+        <button type="submit">Lagre</button>
+      </form>
+      <small>Vises på kvittering og i e-poster med én gang.</small>
+    </div>
+
+    <div class="styringsboks">
+      <h3>Printer</h3>
+      <p id="printerstatus">sjekker …</p>
+      <p class="ko">
+        {% for type, tilstander in kostatus.items() %}
+        {{ type }}:
+        {% for tilstand, n in tilstander.items() %}{{ n }} {{ tilstand }}{% if not loop.last %}, {% endif %}{% endfor %}
+        {% if not loop.last %} · {% endif %}
+        {% endfor %}
+      </p>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block skript %}
+<script>
+// Polling framfor SSE: enklere, og taaler at nettet hikker.
+// Sida lastes bare paa nytt naar noe faktisk har endret seg, slik at man ikke
+// mister et knappetrykk midt i rushet.
+let forrige = null;
+async function oppdater() {
+  try {
+    const r = await fetch("/admin/data");
+    if (!r.ok) return;
+    const d = await r.json();
+    const fingeravtrykk = JSON.stringify(d);
+    if (forrige !== null && forrige !== fingeravtrykk) location.reload();
+    forrige = fingeravtrykk;
+  } catch (e) { /* nettverkshikk */ }
+}
+setInterval(oppdater, 4000);
+oppdater();
+
+async function printerstatus() {
+  try {
+    const r = await fetch("/admin/printerstatus");
+    const d = await r.json();
+    const el = document.getElementById("printerstatus");
+    el.textContent = d.ok ? `Klar (${d.tape_mm} mm tape)` : `Ikke klar: ${d.melding}`;
+    el.className = d.ok ? "ok" : "feil";
+  } catch (e) {
+    document.getElementById("printerstatus").textContent = "ukjent";
+  }
+}
+printerstatus();
+setInterval(printerstatus, 30000);
+</script>
+{% endblock %}

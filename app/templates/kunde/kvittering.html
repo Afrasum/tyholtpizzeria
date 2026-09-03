@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block tittel %}Nummer {{ ordre.dagsnummer }} – {{ innst.stedsnavn }}{% endblock %}
+
+{% block innhold %}
+<main class="side kvittering">
+
+  <p class="takk">Takk, {{ ordre.kundenavn }}!</p>
+
+  <div class="nummer-boks">
+    <span class="nummer-merkelapp">Ditt nummer</span>
+    <strong class="nummer" id="nummer">{{ ordre.dagsnummer }}</strong>
+  </div>
+
+  <p class="status" id="status">{{ statusnavn[ordre.status] }}</p>
+
+  <section class="bestilt">
+    <h2>Bestilt</h2>
+    <ul>
+      {% for linje in linjer %}
+      <li>{{ linje.antall }} × {{ linje.navn_snapshot }}
+        <span class="linjepris">{{ (linje.pris_ore_snapshot * linje.antall) | kroner }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="total"><strong>Å betale: {{ ordre.total_ore | kroner }}</strong></p>
+  </section>
+
+  <section class="betaling">
+    <h2>Betaling</h2>
+    <p>
+      Vipps til <strong>{{ innst.vipps_nummer }}</strong>
+      ({{ innst.vipps_navn }}).
+    </p>
+    <p>
+      Skriv <strong>{{ ordre.dagsnummer }}</strong> som melding, og vis
+      betalingen når du henter.
+    </p>
+  </section>
+
+  <p class="tips">Ta et skjermbilde av denne siden.</p>
+
+</main>
+{% endblock %}
+
+{% block skript %}
+<script>
+// Poller status slik at kunden ser «Klar til henting» uten aa laste paa nytt.
+const ordreId = {{ ordre.id }};
+setInterval(async () => {
+  try {
+    const r = await fetch(`/status/${ordreId}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.finnes) document.getElementById("status").textContent = d.statusnavn;
+  } catch (e) { /* nettverkshikk: proev igjen neste runde */ }
+}, 5000);
+</script>
+{% endblock %}
