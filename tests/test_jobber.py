@@ -56,7 +56,8 @@ def _kjor_til_tom(jobbtype, grense=60):
             jobber.UTFORERE[jobbtype](json.loads(rad["nyttelast"]))
             jobber._fullfor(rad["id"])
         except Exception as e:
-            jobber._feil(rad["id"], jobbtype, rad["forsok"], f"{type(e).__name__}: {e}")
+            # Samme klassifisering som arbeideren bruker, ikke en kopi.
+            jobber.handter_feil(rad, jobbtype, e)
 
 
 def test_strimmelen_printes_i_en_jobb_med_alle_etikettene(tmp_path, monkeypatch):
@@ -227,3 +228,66 @@ def test_koe_paa_nytt_paa_enkeltjobb(tmp_path, monkeypatch):
     with db.kobling() as kob:
         rad = kob.execute("SELECT status, forsok FROM jobb").fetchone()
     assert rad["status"] == "ny" and rad["forsok"] == 0
+
+
+def test_laast_printer_dreper_ikke_jobben(tmp_path, monkeypatch):
+    """PrinterLaast krever et menneske, sa jobben skal vente i det uendelige.
+
+    Regresjonsvern for driftsfeilen 3. september: seks etiketter dode
+    permanent mens printeren stod med en last feil, og matte legges tilbake i
+    koen for hand. Na skal de skrive seg ut av seg selv nar den er tilbake.
+    """
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import jobber, printer
+
+    monkeypatch.setattr(jobber, "MAKS_FORSOK", {"etikett": 3, "epost": 3})
+    monkeypatch.setattr(
+        jobber.printer, "skriv_ut",
+        lambda **kw: (_ for _ in ()).throw(
+            printer.PrinterLaast("skru den av og pa")
+        ),
+    )
+
+    _ordre(db, antall=2)
+    for _ in range(6):
+        _kjor_til_tom("etikett")
+
+    with db.kobling() as kob:
+        rad = kob.execute(
+            "SELECT status, forsok, siste_feil FROM jobb WHERE type='etikett'"
+        ).fetchone()
+    assert rad["status"] == "ny", "jobben dode mens printeren var last"
+    assert rad["forsok"] == 0, "last feil skal ikke telle som forsok"
+    assert "av og pa" in rad["siste_feil"]
+
+    # Printeren kommer tilbake: jobben skal ga gjennom uten inngrep.
+    printet = []
+    monkeypatch.setattr(jobber.printer, "skriv_ut", lambda **kw: printet.append(kw))
+    _kjor_til_tom("etikett")
+
+    assert len(printet) == 1
+    with db.kobling() as kob:
+        assert kob.execute(
+            "SELECT status FROM jobb WHERE type='etikett'"
+        ).fetchone()["status"] == "ferdig"
+
+
+def test_vanlig_printerfeil_gir_fortsatt_opp(tmp_path, monkeypatch):
+    """Skillet ma vaere skarpt: en ekte feil skal ikke prove i evigheten."""
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import jobber, printer
+
+    monkeypatch.setattr(jobber, "MAKS_FORSOK", {"etikett": 3, "epost": 3})
+    monkeypatch.setattr(
+        jobber.printer, "skriv_ut",
+        lambda **kw: (_ for _ in ()).throw(printer.PrinterFeil("tom for tape")),
+    )
+    _ordre(db, antall=1)
+    _kjor_til_tom("etikett")
+
+    with db.kobling() as kob:
+        rad = kob.execute(
+            "SELECT status, forsok FROM jobb WHERE type='etikett'"
+        ).fetchone()
+    assert rad["status"] == "feilet"
+    assert rad["forsok"] == 3

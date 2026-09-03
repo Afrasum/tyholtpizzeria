@@ -20,7 +20,8 @@ from .db import kobling, naa, transaksjon
 
 logg = logging.getLogger("tyholt.jobber")
 
-HVILE_SEK = 1.0  # hvor ofte en tom kø sjekkes på nytt
+HVILE_SEK = 1.0       # hvor ofte en tom kø sjekkes på nytt
+MAKS_PAUSE = 60.0     # tak på tilbaketrekningen etter gjentatte feil
 
 MAKS_FORSOK = {
     "etikett": config.PRINT_MAKS_FORSOK,
@@ -60,14 +61,25 @@ def _fullfor(jobb_id: int) -> None:
         )
 
 
-def _feil(jobb_id: int, jobbtype: str, forsok: int, melding: str) -> None:
+def _feil(
+    jobb_id: int,
+    jobbtype: str,
+    forsok: int,
+    melding: str,
+    vent_i_ro: bool = False,
+) -> None:
     """Legg jobben tilbake i køen, eller gi opp hvis den har prøvd nok.
+
+    `vent_i_ro` teller IKKE forsøket. Den brukes når feilen krever et
+    menneske — printeren har låst seg og må få strøm av og på. Da skal jobben
+    ligge og vente i det uendelige framfor å dø mens noen er på vei bort til
+    printeren, slik at køen skriver seg ut av seg selv når den er tilbake.
 
     Feilede jobber blir liggende med feilmeldingen synlig. Admin har en
     reprint-knapp; ingenting forsvinner i stillhet.
     """
-    nytt = forsok + 1
-    gir_opp = nytt >= MAKS_FORSOK.get(jobbtype, 3)
+    nytt = forsok if vent_i_ro else forsok + 1
+    gir_opp = (not vent_i_ro) and nytt >= MAKS_FORSOK.get(jobbtype, 3)
     with transaksjon() as kob:
         kob.execute(
             "UPDATE jobb SET status = ?, forsok = ?, siste_feil = ?, oppdatert = ?"
@@ -78,6 +90,27 @@ def _feil(jobb_id: int, jobbtype: str, forsok: int, melding: str) -> None:
         logg.error("jobb %s (%s) ga opp etter %s forsøk: %s", jobb_id, jobbtype, nytt, melding)
     else:
         logg.warning("jobb %s (%s) forsøk %s feilet: %s", jobb_id, jobbtype, nytt, melding)
+
+
+def handter_feil(rad, jobbtype: str, e: BaseException) -> None:
+    """Avgjør hva en feilet jobb skal gjøre videre.
+
+    Bor utenfor arbeiderløkka fordi det er en beslutning, ikke en detalj i
+    en løkke — og fordi testene skal kunne kjøre nøyaktig denne logikken
+    framfor en kopi som kan komme i utakt.
+
+    Skillet: PrinterLaast krever et menneske (strøm av og på), så forsøket
+    telles ikke og jobben venter i det uendelige. Alt annet er en ekte feil
+    som skal gi opp etter et antall forsøk.
+    """
+    krever_menneske = isinstance(e, printer.PrinterLaast)
+    _feil(
+        rad["id"],
+        jobbtype,
+        rad["forsok"],
+        f"{type(e).__name__}: {e}",
+        vent_i_ro=krever_menneske,
+    )
 
 
 def _utfor_etikett(nyttelast: dict) -> None:
@@ -96,20 +129,47 @@ UTFORERE = {"etikett": _utfor_etikett, "epost": _utfor_epost}
 
 
 def arbeider(jobbtype: str, stopp: threading.Event) -> None:
-    """Løkka som tømmer én kø. Kjøres i egen tråd per type."""
+    """Løkka som tømmer én kø. Kjøres i egen tråd per type.
+
+    Etter en feil trekker den seg tilbake med doblende pause opp til
+    MAKS_PAUSE. Uten det ville en sovende printer brent gjennom alle forsøk i
+    løpet av sekunder, og jobbene vært døde før noen rakk å reise seg.
+    """
     utfor = UTFORERE[jobbtype]
     logg.info("arbeider for %s startet", jobbtype)
+    paafolgende_feil = 0
+
     while not stopp.is_set():
         rad = _krev(jobbtype)
         if rad is None:
+            paafolgende_feil = 0
             stopp.wait(HVILE_SEK)
             continue
         try:
             utfor(json.loads(rad["nyttelast"]))
             _fullfor(rad["id"])
+            paafolgende_feil = 0
         except Exception as e:  # noqa: BLE001 — alt skal fanges, køen skal leve
-            _feil(rad["id"], jobbtype, rad["forsok"], f"{type(e).__name__}: {e}")
+            handter_feil(rad, jobbtype, e)
+            paafolgende_feil += 1
+            pause = min(2.0 ** min(paafolgende_feil, 6), MAKS_PAUSE)
+            stopp.wait(pause)
+
     logg.info("arbeider for %s stoppet", jobbtype)
+
+
+def varmholder(stopp: threading.Event) -> None:
+    """Pinger printeren jevnlig så Bluetooth-lenken ikke sovner.
+
+    Auto-avslaget starter hele ulykken: sover printeren, dør lenken, og da
+    låser den en kommunikasjonsfeil som bare strøm av og på løser.
+    """
+    while not stopp.is_set():
+        try:
+            printer.hold_varm()
+        except Exception as e:  # noqa: BLE001
+            logg.warning("varmholder: %s", e)
+        stopp.wait(30)
 
 
 def start(stopp: threading.Event) -> list[threading.Thread]:
@@ -117,6 +177,12 @@ def start(stopp: threading.Event) -> list[threading.Thread]:
     for jobbtype in UTFORERE:
         t = threading.Thread(
             target=arbeider, args=(jobbtype, stopp), name=f"jobb-{jobbtype}", daemon=True
+        )
+        t.start()
+        trader.append(t)
+    if printer.tilgjengelig():
+        t = threading.Thread(
+            target=varmholder, args=(stopp,), name="printer-varm", daemon=True
         )
         t.start()
         trader.append(t)

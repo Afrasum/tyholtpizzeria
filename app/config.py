@@ -46,7 +46,9 @@ QR_URL = os.environ.get("TP_QR_URL", "HTTPS://TYHOLTPIZZERIA.AFRASUM.DEV")
 # deling: er QR-en bare pa en eske, er det bare den ene som kan deles videre.
 QR_BARE_FORSTE = os.environ.get("TP_QR_BARE_FORSTE", "0") == "1"
 PRINT_TIDSAVBRUDD = int(os.environ.get("TP_PRINT_TIDSAVBRUDD", "30"))
-PRINT_MAKS_FORSOK = int(os.environ.get("TP_PRINT_MAKS_FORSOK", "3"))
+PRINT_MAKS_FORSOK = int(os.environ.get("TP_PRINT_MAKS_FORSOK", "12"))
+# Pause etter hver strimmel, sa tapen kommer helt ut for neste jobb starter.
+PRINT_HVILE = float(os.environ.get("TP_PRINT_HVILE", "2.0"))
 
 TIDSSONE = ZoneInfo(os.environ.get("TP_TIDSSONE", "Europe/Oslo"))
 
