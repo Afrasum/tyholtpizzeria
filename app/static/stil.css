@@ -110,7 +110,10 @@ button:hover { background: #f3efe6; }
 .nokkeltall .solgt { font-weight: 600; color: var(--tekst); }
 .logg-ut { margin-left: auto; }
 
-.ordretabell { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+/* Tabellen scroller sidelengs for seg selv. Uten dette sprenger 7 kolonner
+ * med knapper viewporten paa en telefon, og hele sida blir dratt med. */
+.tabellramme { overflow-x: auto; margin-top: 1rem; -webkit-overflow-scrolling: touch; }
+.ordretabell { width: 100%; border-collapse: collapse; min-width: 44rem; }
 .ordretabell th, .ordretabell td {
 	text-align: left;
 	padding: .5rem .5rem;

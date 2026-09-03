@@ -48,6 +48,10 @@
   </section>
   {% endif %}
 
+  <!-- Rammen finnes for at tabellen skal kunne scrolle sidelengs FOR SEG,
+       framfor aa dytte hele sida bredere enn skjermen. Uten den blir admin
+       paa mobil ubrukelig. Struktur, ikke styling - restyle fritt. -->
+  <div class="tabellramme">
   <table class="ordretabell">
     <thead>
       <tr>
@@ -98,6 +102,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 
   {% if not rader %}<p class="ingen">Ingen bestillinger ennå.</p>{% endif %}
 
