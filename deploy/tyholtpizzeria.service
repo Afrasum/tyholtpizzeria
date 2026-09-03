@@ -1,0 +1,20 @@
+[Unit]
+Description=Tyholt Pizzeria (FastAPI)
+After=network-online.target rfcomm-bind.service
+Wants=network-online.target rfcomm-bind.service
+
+[Service]
+Type=simple
+User=afras
+Group=afras
+WorkingDirectory=/home/afras/projects/tyholtpizzeria
+EnvironmentFile=/home/afras/projects/tyholtpizzeria/.env
+# EN arbeider, ikke flere. Tildelingen av dagsnummer bygger pa SQLites
+# skrivelas i en prosess, og printeren taler bare en tilkobling om gangen.
+ExecStart=/home/afras/projects/tyholtpizzeria/.venv/bin/uvicorn app.main:app \
+    --host 127.0.0.1 --port 8009 --workers 1
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
