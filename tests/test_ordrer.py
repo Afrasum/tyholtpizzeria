@@ -92,7 +92,12 @@ def test_dagsnummer_starter_paa_1_og_okes(tmp_path, monkeypatch):
     assert b["nummer"] == 2
 
 
-def test_en_etikettjobb_per_pizza_med_teller(tmp_path, monkeypatch):
+def test_en_etikett_per_pizza_i_en_strimmeljobb(tmp_path, monkeypatch):
+    """Én jobb per ordre, men én etikett per pizza inne i den.
+
+    Strimmelen finnes for tapens skyld: printeren mater ut 2,5 cm per jobb,
+    så alle etikettene i en ordre printes sammenhengende.
+    """
     db = _oppsett(tmp_path, monkeypatch)
     _tving_apent(db)
     from app.ordrer import Onske, opprett
@@ -106,16 +111,20 @@ def test_en_etikettjobb_per_pizza_med_teller(tmp_path, monkeypatch):
     assert res["total_ore"] == 3 * 5900
 
     with db.kobling() as kob:
-        jobber = [
-            json.loads(r["nyttelast"])
-            for r in kob.execute(
+        rader = list(
+            kob.execute(
                 "SELECT nyttelast FROM jobb WHERE type='etikett' AND ordre_id=? ORDER BY id",
                 (res["ordre_id"],),
             )
-        ]
-    assert [j["tekst"] for j in jobber] == ["Margherita", "Margherita", "Pære"]
-    assert [(j["indeks"], j["av"]) for j in jobber] == [(1, 3), (2, 3), (3, 3)]
-    assert all(j["nummer"] == res["nummer"] for j in jobber)
+        )
+    assert len(rader) == 1, "skal vaere EN jobb for hele ordren"
+    last = json.loads(rader[0]["nyttelast"])
+    ets = last["etiketter"]
+
+    assert [e["tekst"] for e in ets] == ["Margherita", "Margherita", "Pære"]
+    assert [(e["indeks"], e["av"]) for e in ets] == [(1, 3), (2, 3), (3, 3)]
+    assert last["nummer"] == res["nummer"]
+    assert last["kundenavn"] == "Afras"
 
 
 def test_utsolgt_avvises(tmp_path, monkeypatch):
@@ -297,3 +306,38 @@ def test_forlatt_fjerner_nummeret_fra_henteskjermen(tmp_path, monkeypatch):
     sett_status(res["ordre_id"], "forlatt")
     with db.kobling() as kob:
         assert ordrer.klare_numre(kob) == []
+
+
+def test_nummeret_er_delt_paa_tvers_av_pizzatyper(tmp_path, monkeypatch):
+    """Én teller for alle typer, og samme nummer på alle pizzaer i en ordre.
+
+    Dagens første pærepizza skal IKKE begynne på 1 — den arver ordrenummeret,
+    som er én mer enn forrige bestilling uansett hva den inneholdt.
+    """
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    from app.ordrer import Onske, opprett
+
+    m = _meny_id(db, "margherita")
+    s = _meny_id(db, "skinke")
+    p = _meny_id(db, "paere")
+
+    en = opprett("A", None, [Onske(m, 1)])                       # bare margherita
+    to = opprett("B", None, [Onske(s, 2)])                       # bare skinke
+    tre = opprett("C", None, [Onske(p, 1), Onske(m, 1)])         # forste paere + margherita
+
+    assert [en["nummer"], to["nummer"], tre["nummer"]] == [1, 2, 3], (
+        "telleren skal ga pa ordre, ikke per pizzatype"
+    )
+
+    # Ordre 3 har to ulike pizzaer — begge etikettene skal si 3.
+    with db.kobling() as kob:
+        last = json.loads(
+            kob.execute(
+                "SELECT nyttelast FROM jobb WHERE type='etikett' AND ordre_id=?",
+                (tre["ordre_id"],),
+            ).fetchone()["nyttelast"]
+        )
+    assert last["nummer"] == 3, "samme ordre ma ha samme nummer"
+    assert sorted(e["tekst"] for e in last["etiketter"]) == ["Margherita", "Pære"]
+    assert sorted((e["indeks"], e["av"]) for e in last["etiketter"]) == [(1, 2), (2, 2)]

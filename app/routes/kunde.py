@@ -46,6 +46,10 @@ async def bestill(request: Request):
 
     kundenavn = str(skjema.get("kundenavn", ""))
     epost = str(skjema.get("epost", ""))
+    # required i HTML-en er ikke en kontroll — den kan omgaas trivielt.
+    # Avkrysningen ER hele artefaktet av «de lover aa betale», sa den maa
+    # sjekkes her.
+    lofte = str(skjema.get("lofte", "")).strip() != ""
 
     onsker: list[ordrer.Onske] = []
     for nokkel, verdi in skjema.multi_items():
@@ -60,6 +64,10 @@ async def bestill(request: Request):
             onsker.append(ordrer.Onske(menyelement_id, antall))
 
     try:
+        if not lofte:
+            raise ordrer.Avvist(
+                "Du må krysse av for at du henter og betaler med Vipps."
+            )
         res = await run_in_threadpool(ordrer.opprett, kundenavn, epost, onsker)
     except ordrer.Avvist as e:
         def _feilside():

@@ -79,6 +79,28 @@ def aapen_salgsdag(kob: sqlite3.Connection, tid: datetime | None = None) -> sqli
     ).fetchone()
 
 
+def gjeldende_salgsdag(
+    kob: sqlite3.Connection, tid: datetime | None = None
+) -> sqlite3.Row | None:
+    """Den åpne salgsdagen, ellers den siste som har BEGYNT.
+
+    «Som har begynt» er hele poenget. Naiv nyeste-dag-først gir salgsdag 2 så
+    snart den er seedet, og da skjer to ting: under rigging klokka 14:00 den
+    4. viser admin en tom tabell, og klokka 00:00:01 den 5. forsvinner hver
+    ordre som fortsatt er klar eller i produksjon — fra admin OG fra
+    henteskjermen. Vi stenger ved midnatt, så det er nøyaktig da det er
+    garantert at det står upplukkede pizzaer i hylla.
+    """
+    aapen = aapen_salgsdag(kob, tid)
+    if aapen is not None:
+        return aapen
+    nu = (tid or datetime.now(config.TIDSSONE)).isoformat(timespec="seconds")
+    return kob.execute(
+        "SELECT * FROM salgsdag WHERE apner <= ? ORDER BY apner DESC LIMIT 1",
+        (nu,),
+    ).fetchone()
+
+
 def _manuelt_stengt(kob: sqlite3.Connection) -> bool:
     rad = kob.execute(
         "SELECT verdi FROM innstilling WHERE nokkel = 'manuelt_stengt'"
@@ -208,21 +230,33 @@ def opprett(
                 etiketter.append({"tekst": rad["etikettnavn"]})
 
         for indeks, etikett in enumerate(etiketter, start=1):
-            nyttelast = {
-                "ordre_id": ordre_id,
-                "nummer": nummer,
-                "kundenavn": kundenavn,
-                "tekst": etikett["tekst"],
-                "indeks": indeks,
-                "av": len(etiketter),
-            }
-            kob.execute(
-                """
-                INSERT INTO jobb (type, nyttelast, status, ordre_id, opprettet, oppdatert)
-                VALUES ('etikett', ?, 'ny', ?, ?, ?)
-                """,
-                (json.dumps(nyttelast, ensure_ascii=False), ordre_id, tid, tid),
-            )
+            etikett["indeks"] = indeks
+            etikett["av"] = len(etiketter)
+
+        # ÉN jobb for hele ordren, ikke én per pizza. Etikettene printes som en
+        # sammenhengende strimmel med klippeguider, slik at vi betaler
+        # printerens 2,5 cm forspill én gang framfor én gang per pizza. Det
+        # sparer 5 cm på en tre-pizza ordre og koster ingen ekstra klipp.
+        kob.execute(
+            """
+            INSERT INTO jobb (type, nyttelast, status, ordre_id, opprettet, oppdatert)
+            VALUES ('etikett', ?, 'ny', ?, ?, ?)
+            """,
+            (
+                json.dumps(
+                    {
+                        "ordre_id": ordre_id,
+                        "nummer": nummer,
+                        "kundenavn": kundenavn,
+                        "etiketter": etiketter,
+                    },
+                    ensure_ascii=False,
+                ),
+                ordre_id,
+                tid,
+                tid,
+            ),
+        )
 
         if epost:
             kob.execute(
@@ -335,17 +369,15 @@ def med_linjer(kob: sqlite3.Connection, ordre_id: int) -> dict | None:
     return {"ordre": ordre, "linjer": linjer}
 
 
-def for_admin(kob: sqlite3.Connection, salgsdag_id: int | None = None) -> list[dict]:
+def for_admin(
+    kob: sqlite3.Connection,
+    salgsdag_id: int | None = None,
+    tid: datetime | None = None,
+) -> list[dict]:
     """Alle ordrer for admin-tabellen, nyeste først, med linjer og printstatus."""
     if salgsdag_id is None:
-        dag = aapen_salgsdag(kob)
-        if dag is None:
-            rad = kob.execute(
-                "SELECT id FROM salgsdag ORDER BY apner DESC LIMIT 1"
-            ).fetchone()
-            salgsdag_id = rad["id"] if rad else None
-        else:
-            salgsdag_id = dag["id"]
+        dag = gjeldende_salgsdag(kob, tid)
+        salgsdag_id = dag["id"] if dag else None
     if salgsdag_id is None:
         return []
 
@@ -377,9 +409,15 @@ def for_admin(kob: sqlite3.Connection, salgsdag_id: int | None = None) -> list[d
     return ut
 
 
-def klare_numre(kob: sqlite3.Connection) -> list[int]:
-    """Numre som venter på å hentes. Til henteskjermen — kun tall, ingen navn."""
-    dag = aapen_salgsdag(kob)
+def klare_numre(
+    kob: sqlite3.Connection, tid: datetime | None = None
+) -> list[int]:
+    """Numre som venter på å hentes. Til henteskjermen — kun tall, ingen navn.
+
+    Bruker gjeldende_salgsdag, ikke aapen_salgsdag: stenger vi midt i at noen
+    venter, skal nummeret deres bli stående til noen faktisk trykker levert.
+    """
+    dag = gjeldende_salgsdag(kob, tid)
     if dag is None:
         return []
     return [

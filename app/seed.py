@@ -95,9 +95,14 @@ MENY: tuple[tuple[str, str, str, str, list[str], int], ...] = (
 )
 
 # Åpent 15:00–00:00, kun 4. og 5. september 2026.
+#
+# stenger står med vilje på 01:00, ikke 00:00. Blir det femten minutter på
+# overtid, skal ikke bestilling og admin falle sammen mens det står folk i
+# lokalet — og det finnes ingen vei til å utvide tiden fra admin. Den
+# manuelle stengt-bryteren er den EKTE stengingen; dette er bare slakken.
 SALGSDAGER: tuple[tuple[str, str, str], ...] = (
-    ("2026-09-04", "2026-09-04T15:00:00+02:00", "2026-09-05T00:00:00+02:00"),
-    ("2026-09-05", "2026-09-05T15:00:00+02:00", "2026-09-06T00:00:00+02:00"),
+    ("2026-09-04", "2026-09-04T15:00:00+02:00", "2026-09-05T01:00:00+02:00"),
+    ("2026-09-05", "2026-09-05T15:00:00+02:00", "2026-09-06T01:00:00+02:00"),
 )
 
 INNSTILLINGER: dict[str, str] = {

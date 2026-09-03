@@ -1,0 +1,10 @@
+[Unit]
+Description=Sikkerhetskopier ordrebasen hvert kvarter
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

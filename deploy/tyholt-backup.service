@@ -1,0 +1,9 @@
+[Unit]
+Description=Sikkerhetskopi av Tyholt Pizzeria-basen
+
+[Service]
+Type=oneshot
+User=afras
+Group=afras
+EnvironmentFile=/home/afras/projects/tyholtpizzeria/.env
+ExecStart=/home/afras/projects/tyholtpizzeria/deploy/backup.sh

@@ -6,6 +6,8 @@ friksjon for to personer i samme rom.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -125,7 +127,22 @@ def data(_=Depends(auth.krev)):
                     },
                 }
             )
-        return {"ordrer": ut, "feilede_jobber": len(jobber.feilede())}
+        # signatur utelater minutter/gammel med vilje. De endrer seg hvert
+        # minutt uansett, sa hadde de vaert med ville sida lastet pa nytt minst
+        # en gang i minuttet hele kvelden — nettopp det knappetrykket midt i
+        # rushet vi vil unnga. Alderen regnes ut i nettleseren i stedet.
+        stabilt = [
+            {k: o[k] for k in ("id", "nummer", "navn", "status", "betalt", "total_ore")}
+            | {"print": o["print"], "linjer": o["linjer"]}
+            for o in ut
+        ]
+        return {
+            "ordrer": ut,
+            "feilede_jobber": len(jobber.feilede()),
+            "signatur": hashlib.sha256(
+                json.dumps(stabilt, sort_keys=True, ensure_ascii=False).encode()
+            ).hexdigest(),
+        }
 
 
 # ── Handlinger ──────────────────────────────────────────────────────────────

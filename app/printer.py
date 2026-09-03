@@ -34,14 +34,15 @@ def tilgjengelig() -> bool:
 
 
 def skriv_ut(
-    tekst: str,
     nummer: int,
+    etiketter: list[dict],
     kundenavn: str = "",
-    indeks: int = 1,
-    av: int = 1,
-    forkortelse: str | None = None,
 ) -> None:
-    """Rendre og printe én etikett. Kaster `PrinterFeil` hvis noe går galt."""
+    """Rendre og printe alle etikettene i en ordre som én strimmel.
+
+    Én utskrift framfor én per pizza: printeren mater ut 2,5 cm før hver jobb,
+    og de kan ikke gjenbrukes.
+    """
     if not tilgjengelig():
         raise PrinterFeil(
             "Printing er ikke satt opp (mangler TP_PRINTER_PORT eller labelmaker.py)."
@@ -55,14 +56,9 @@ def skriv_ut(
         )
 
     with tempfile.TemporaryDirectory(prefix="tyholt-etikett-") as katalog:
-        png = etikett.render(
-            Path(katalog) / "etikett.png",
-            tekst=tekst,
-            nummer=nummer,
-            kundenavn=kundenavn,
-            indeks=indeks,
-            av=av,
-            forkortelse=forkortelse,
+        png = etikett.render_strimmel(
+            Path(katalog) / "strimmel.png",
+            [{**e, "nummer": nummer, "kundenavn": kundenavn} for e in etiketter],
             qr_url=config.QR_URL if config.QR_PA_ETIKETT else None,
         )
 
@@ -100,7 +96,10 @@ def skriv_ut(
     if "successfully" not in ut:
         raise PrinterFeil("Uventet svar fra labelmaker — se logg.")
 
-    logg.info("etikett printet: %s %s (%s/%s)", tekst, nummer, indeks, av)
+    logg.info(
+        "strimmel printet: nr %s, %s etikett(er): %s",
+        nummer, len(etiketter), ", ".join(e["tekst"] for e in etiketter),
+    )
 
 
 def status() -> dict:

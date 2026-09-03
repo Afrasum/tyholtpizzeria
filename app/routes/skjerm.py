@@ -29,17 +29,17 @@ def skjerm(request: Request):
 @ruter.get("/skjerm/data")
 def skjermdata():
     with kobling() as kob:
-        return {
-            "klare": ordrer.klare_numre(kob),
-            "i_produksjon": [
+        dag = ordrer.gjeldende_salgsdag(kob)
+        underveis = (
+            [
                 r["dagsnummer"]
                 for r in kob.execute(
-                    """
-                    SELECT o.dagsnummer FROM ordre o
-                    JOIN salgsdag s ON s.id = o.salgsdag_id
-                    WHERE o.status = 'i_produksjon' AND s.aktiv = 1
-                    ORDER BY o.dagsnummer
-                    """
+                    "SELECT dagsnummer FROM ordre WHERE salgsdag_id = ?"
+                    " AND status = 'i_produksjon' ORDER BY dagsnummer",
+                    (dag["id"],),
                 )
-            ],
-        }
+            ]
+            if dag
+            else []
+        )
+        return {"klare": ordrer.klare_numre(kob), "i_produksjon": underveis}

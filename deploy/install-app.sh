@@ -23,6 +23,13 @@ else
 	echo "       men etikettjobber vil feile til den er tilbake."
 fi
 
+echo "==> sikkerhetskopiering"
+install -m 644 "$REPO/deploy/tyholt-backup.service" /etc/systemd/system/tyholt-backup.service
+install -m 644 "$REPO/deploy/tyholt-backup.timer"   /etc/systemd/system/tyholt-backup.timer
+systemctl daemon-reload
+systemctl enable --now tyholt-backup.timer
+echo "    kvarterskopier til ~/data/tyholtpizzeria/backup/"
+
 echo "==> app-unit"
 install -m 644 "$REPO/deploy/tyholtpizzeria.service" /etc/systemd/system/tyholtpizzeria.service
 

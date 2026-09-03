@@ -82,11 +82,9 @@ def _feil(jobb_id: int, jobbtype: str, forsok: int, melding: str) -> None:
 
 def _utfor_etikett(nyttelast: dict) -> None:
     printer.skriv_ut(
-        tekst=nyttelast["tekst"],
         nummer=nyttelast["nummer"],
+        etiketter=nyttelast["etiketter"],
         kundenavn=nyttelast.get("kundenavn", ""),
-        indeks=nyttelast.get("indeks", 1),
-        av=nyttelast.get("av", 1),
     )
 
 

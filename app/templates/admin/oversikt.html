@@ -58,7 +58,7 @@
     <tbody id="ordrekropp">
       {% for rad in rader %}
       {% set o = rad.ordre %}
-      <tr class="ordre status-{{ o.status }} {% if rad.gammel %}gammel{% endif %}">
+      <tr data-ordre="{{ o.id }}" class="ordre status-{{ o.status }} {% if rad.gammel %}gammel{% endif %}">
         <td class="nr">{{ o.dagsnummer }}</td>
         <td class="navn">{{ o.kundenavn }}</td>
         <td class="varer">
@@ -162,15 +162,21 @@
 // Polling framfor SSE: enklere, og taaler at nettet hikker.
 // Sida lastes bare paa nytt naar noe faktisk har endret seg, slik at man ikke
 // mister et knappetrykk midt i rushet.
-let forrige = null;
+let forrigeSignatur = null;
 async function oppdater() {
   try {
     const r = await fetch("/admin/data");
     if (!r.ok) return;
     const d = await r.json();
-    const fingeravtrykk = JSON.stringify(d);
-    if (forrige !== null && forrige !== fingeravtrykk) location.reload();
-    forrige = fingeravtrykk;
+    // Sammenlikner bare signaturen, som utelater minuttellere. Ellers ville
+    // sida lastet pa nytt hvert minutt og spist et knappetrykk.
+    if (forrigeSignatur !== null && forrigeSignatur !== d.signatur) location.reload();
+    forrigeSignatur = d.signatur;
+    // Alderen oppdateres i nettleseren, uten a laste noe.
+    for (const o of d.ordrer) {
+      const celle = document.querySelector(`tr[data-ordre="${o.id}"] .gammel-merke`);
+      if (celle) celle.textContent = `klar i ${o.minutter} min`;
+    }
   } catch (e) { /* nettverkshikk */ }
 }
 setInterval(oppdater, 4000);

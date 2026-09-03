@@ -76,6 +76,76 @@ def _qr_bilde(nyttelast: str, side: int) -> Image.Image | None:
     return rutenett.resize((side, side), Image.NEAREST)
 
 
+KLIPPEROM = 26      # px mellom etiketter i en strimmel (~4 mm), med klippeguide
+
+
+def _mal_etikett(
+    tekst: str,
+    nummer: int,
+    kundenavn: str = "",
+    indeks: int = 1,
+    av: int = 1,
+    forkortelse: str | None = None,
+    qr_url: str | None = None,
+) -> Image.Image:
+    """Tegn én etikett som eget bilde, 88 px høyt og akkurat så bredt som nødvendig."""
+    return _tegn(
+        tekst=tekst, nummer=nummer, kundenavn=kundenavn, indeks=indeks, av=av,
+        forkortelse=forkortelse, qr_url=qr_url,
+    )
+
+
+def render_strimmel(
+    sti: Path,
+    etiketter: list[dict],
+    qr_url: str | None = None,
+) -> Path:
+    """Sy flere etiketter sammen til én strimmel med klippeguider.
+
+    Dette er tapesparingen. Printeren mater ut 2,5 cm før hver utskrift —
+    avstanden fra skrivehodet til utgangen — og de kan ikke gjenbrukes. Ved å
+    sende alle etikettene i en ordre som ÉN utskrift betaler vi forspillet én
+    gang i stedet for én gang per pizza.
+
+    Det koster ingen ekstra klipp: P300BT har ingen autokutter, så etikettene
+    klippes for hånd uansett. Nå klippes det mellom dem framfor etter hver.
+    """
+    if not etiketter:
+        raise ValueError("ingen etiketter å printe")
+
+    biter = [
+        _tegn(
+            tekst=e["tekst"],
+            nummer=e["nummer"],
+            kundenavn=e.get("kundenavn", ""),
+            indeks=e.get("indeks", 1),
+            av=e.get("av", 1),
+            forkortelse=e.get("forkortelse"),
+            qr_url=qr_url,
+        )
+        for e in etiketter
+    ]
+
+    bredde = sum(b.width for b in biter) + KLIPPEROM * (len(biter) - 1)
+    strimmel = Image.new("L", (bredde, HOYDE), 255)
+    tegner = ImageDraw.Draw(strimmel)
+
+    x = 0
+    for i, bit in enumerate(biter):
+        strimmel.paste(bit, (x, 0))
+        x += bit.width
+        if i < len(biter) - 1:
+            # Stiplet klippeguide midt i mellomrommet.
+            guide = x + KLIPPEROM // 2
+            for y in range(TRYKK_TOPP, TRYKK_TOPP + TRYKK_HOYDE, 6):
+                tegner.line((guide, y, guide, y + 3), fill=0, width=1)
+            x += KLIPPEROM
+
+    sti.parent.mkdir(parents=True, exist_ok=True)
+    strimmel.save(sti)
+    return sti
+
+
 def render(
     sti: Path,
     tekst: str,
@@ -86,7 +156,26 @@ def render(
     forkortelse: str | None = None,
     qr_url: str | None = None,
 ) -> Path:
-    """Tegn etiketten og skriv den til `sti`. Returnerer stien.
+    """Én etikett til fil. Beholdt for prøveutskrift og tester."""
+    bilde = _tegn(
+        tekst=tekst, nummer=nummer, kundenavn=kundenavn, indeks=indeks, av=av,
+        forkortelse=forkortelse, qr_url=qr_url,
+    )
+    sti.parent.mkdir(parents=True, exist_ok=True)
+    bilde.save(sti)
+    return sti
+
+
+def _tegn(
+    tekst: str,
+    nummer: int,
+    kundenavn: str = "",
+    indeks: int = 1,
+    av: int = 1,
+    forkortelse: str | None = None,
+    qr_url: str | None = None,
+) -> Image.Image:
+    """Tegn én etikett og returner bildet.
 
     Layout, venstre mot høyre:
 
@@ -147,9 +236,7 @@ def render(
         if qr is not None:
             bilde.paste(qr, (bredde - MARG - qr_side, TRYKK_TOPP))
 
-    sti.parent.mkdir(parents=True, exist_ok=True)
-    bilde.save(sti)
-    return sti
+    return bilde
 
 
 def forhandsvis_binarisert(sti_inn: Path, sti_ut: Path, terskel: int = 128) -> Path:

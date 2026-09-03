@@ -59,27 +59,25 @@ def _kjor_til_tom(jobbtype, grense=60):
             jobber._feil(rad["id"], jobbtype, rad["forsok"], f"{type(e).__name__}: {e}")
 
 
-def test_etikettjobber_fullfores_naar_printeren_virker(tmp_path, monkeypatch):
+def test_strimmelen_printes_i_en_jobb_med_alle_etikettene(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    from app import jobber, printer
+    from app import jobber
 
     printet = []
-    monkeypatch.setattr(
-        printer, "skriv_ut", lambda **kw: printet.append(kw)
-    )
-    monkeypatch.setattr(jobber.printer, "skriv_ut", printer.skriv_ut)
+    monkeypatch.setattr(jobber.printer, "skriv_ut", lambda **kw: printet.append(kw))
 
-    res = _ordre(db, antall=3)
+    _ordre(db, antall=3)
     _kjor_til_tom("etikett")
 
-    assert len(printet) == 3
-    assert [p["indeks"] for p in printet] == [1, 2, 3]
-    assert all(p["av"] == 3 for p in printet)
+    assert len(printet) == 1, "3 pizzaer skal bli EN utskrift"
+    ets = printet[0]["etiketter"]
+    assert [e["indeks"] for e in ets] == [1, 2, 3]
+    assert all(e["av"] == 3 for e in ets)
     with db.kobling() as kob:
         n = kob.execute(
             "SELECT COUNT(*) c FROM jobb WHERE type='etikett' AND status='ferdig'"
         ).fetchone()["c"]
-    assert n == 3
+    assert n == 1
 
 
 def test_printerfeil_gir_retry_og_deretter_feilet(tmp_path, monkeypatch):
@@ -141,7 +139,8 @@ def test_krev_gir_hver_jobb_til_bare_en_arbeider(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
     from app import jobber
 
-    _ordre(db, antall=5)
+    for _ in range(5):
+        _ordre(db, antall=1)   # fem ordrer gir fem jobber
 
     tatt: list[int] = []
     laas = threading.Lock()
@@ -200,12 +199,12 @@ def test_reprint_lager_ferske_jobber(tmp_path, monkeypatch):
     _kjor_til_tom("etikett")
 
     lagt = jobber.skriv_ut_ordre_paa_nytt(res["ordre_id"])
-    assert lagt == 2
+    assert lagt == 1, "reprint av ordren er en ny strimmeljobb"
     with db.kobling() as kob:
-        nye = kob.execute(
-            "SELECT COUNT(*) c FROM jobb WHERE type='etikett' AND status='ny'"
-        ).fetchone()["c"]
-    assert nye == 2
+        rad = kob.execute(
+            "SELECT nyttelast FROM jobb WHERE type='etikett' AND status='ny'"
+        ).fetchone()
+    assert len(json.loads(rad["nyttelast"])["etiketter"]) == 2
 
 
 def test_koe_paa_nytt_paa_enkeltjobb(tmp_path, monkeypatch):
