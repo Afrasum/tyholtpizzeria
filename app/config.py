@@ -40,7 +40,7 @@ QR_PA_ETIKETT = os.environ.get("TP_QR_PA_ETIKETT", "1") == "1"
 # men 0,36 mm per modul framfor 0,31 - og det var forskjellen som gjorde at
 # den lot seg skanne. Skjema og vertsnavn er ikke versalfoelsomme, saa
 # telefonen aapner sida som normalt. Sma bokstaver ville tvunget byte-modus.
-QR_URL = os.environ.get("TP_QR_URL", "HTTPS://TYHOLTPIZZERIA.AFRASUM.DEV")
+QR_URL = os.environ.get("TP_QR_URL", "HTTPS://TYHOLTPIZZERIA.COM")
 # QR bare pa den forste etiketten i en ordre, framfor pa alle. QR-en koster
 # 1,1 cm tape per etikett, sa en tre-pizza ordre sparer 2,2 cm. Avveiningen er
 # deling: er QR-en bare pa en eske, er det bare den ene som kan deles videre.
