@@ -13,7 +13,11 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from .. import allergener, auth, config, innstillinger, jobber, meny, ordrer, printer
+from urllib.parse import quote
+
+from .. import (
+    allergener, auth, config, epost, innstillinger, jobber, meny, ordrer, printer,
+)
 from ..db import kobling
 from ..maler import maler
 
@@ -63,6 +67,8 @@ def oversikt(
     slettet: int | None = None,
     nullstill: str = "",
     vipps: str = "",
+    eposttest: str = "",
+    epostmelding: str = "",
     _=Depends(auth.krev),
 ):
     with kobling() as kob:
@@ -104,6 +110,9 @@ def oversikt(
                 "mottakere": innstillinger.mottakere(kob),
                 "aktiv_mottaker": innstillinger.aktiv_mottaker(kob),
                 "vipps_ugyldig": vipps == "ugyldig",
+                "epost_resultat": eposttest,
+                "epost_melding": epostmelding,
+                "smtp_vert": config.SMTP_VERT,
             },
         )
 
@@ -235,6 +244,16 @@ def nullstill(bekreft: str = Form(""), _=Depends(auth.krev)):
         return RedirectResponse("/admin", status_code=303)
     antall = ordrer.slett_dagens_ordrer(dag["id"])
     return RedirectResponse(f"/admin?slettet={antall}", status_code=303)
+
+
+@ruter.post("/epost-test")
+def epost_test(til: str = Form(""), _=Depends(auth.krev)):
+    ok, melding = epost.test_oppsett(til.strip())
+    return RedirectResponse(
+        f"/admin?eposttest={'ok' if ok else 'feil'}"
+        f"&epostmelding={quote(melding[:300])}",
+        status_code=303,
+    )
 
 
 @ruter.get("/printerstatus")

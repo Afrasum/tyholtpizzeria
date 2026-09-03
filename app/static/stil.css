@@ -798,6 +798,18 @@ form.inline { display: inline; }
 }
 .legg-til-mottaker form { margin-top: .7rem; }
 
+.epost-svar {
+	font-family: var(--mono);
+	font-size: .6875rem;
+	line-height: 1.6;
+	margin: 0 0 .7rem;
+	padding: .5rem .6rem;
+	border-radius: var(--tape-radius);
+	word-break: break-word;
+}
+.epost-svar.ok { color: var(--klar); background: rgba(138,184,115,.1); }
+.epost-svar.feil { color: var(--feil); background: rgba(226,87,76,.1); }
+
 .utsolgtliste { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
 .utsolgtliste li { display: flex; align-items: center; justify-content: space-between; gap: .6rem; font-size: .9375rem; }
 

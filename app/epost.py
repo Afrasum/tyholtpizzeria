@@ -80,6 +80,45 @@ Tyholt Pizzeria
     return emne, kropp
 
 
+def _send_raa(til: str, emne: str, kropp: str) -> None:
+    """Selve sendingen. Delt mellom ordrepost og testmelding."""
+    melding = EmailMessage()
+    melding["From"] = config.EPOST_FRA
+    melding["To"] = til
+    melding["Subject"] = emne
+    melding.set_content(kropp)
+
+    with smtplib.SMTP(config.SMTP_VERT, config.SMTP_PORT, timeout=20) as smtp:
+        smtp.starttls()
+        if config.SMTP_BRUKER:
+            smtp.login(config.SMTP_BRUKER, config.SMTP_PASSORD)
+        smtp.send_message(melding)
+
+
+def test_oppsett(til: str) -> tuple[bool, str]:
+    """Send en testmelding og rapporter hva som faktisk skjedde.
+
+    Finnes fordi «virker e-posten?» ellers besvares ved å legge inn en
+    bestilling og håpe. Feilmeldingen fra serveren gis ordrett videre — det
+    er den som forteller om det er passordet, verten eller avsenderadressen
+    som er feil.
+    """
+    if not config.SMTP_VERT:
+        return False, "TP_SMTP_VERT er ikke satt i .env — ingen server å sende gjennom."
+    try:
+        _send_raa(
+            til,
+            "Test fra Tyholt Pizzeria",
+            "Dette er en testmelding.\n\n"
+            f"Sendt gjennom {config.SMTP_VERT}:{config.SMTP_PORT}\n"
+            f"Avsender: {config.EPOST_FRA}\n\n"
+            "Kom denne fram, virker bestillingsbekreftelsene også.\n",
+        )
+    except Exception as e:  # noqa: BLE001 — meldingen er hele poenget
+        return False, f"{type(e).__name__}: {e}"
+    return True, f"Sendt til {til}. Sjekk innboksen — og søppelposten."
+
+
 def send(ordre_id: int, mal: str) -> None:
     """Send én e-post. Kaster ved feil, slik at jobbkøen kan prøve på nytt."""
     with kobling() as kob:
@@ -101,15 +140,5 @@ def send(ordre_id: int, mal: str) -> None:
         )
         return
 
-    melding = EmailMessage()
-    melding["From"] = config.EPOST_FRA
-    melding["To"] = ordre["epost"]
-    melding["Subject"] = emne
-    melding.set_content(kropp)
-
-    with smtplib.SMTP(config.SMTP_VERT, config.SMTP_PORT, timeout=20) as smtp:
-        smtp.starttls()
-        if config.SMTP_BRUKER:
-            smtp.login(config.SMTP_BRUKER, config.SMTP_PASSORD)
-        smtp.send_message(melding)
+    _send_raa(ordre["epost"], emne, kropp)
     logg.info("e-post sendt til %s: %s", ordre["epost"], emne)
