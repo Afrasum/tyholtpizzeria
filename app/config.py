@@ -26,9 +26,15 @@ HEMMELIG_NOKKEL = os.environ.get("TP_HEMMELIG_NOKKEL", "usikker-utviklingsnokkel
 # Printer. TP_PRINTER_PORT tom streng slår av printing helt, slik at appen kan
 # kjøres på Mac uten Bluetooth.
 PRINTER_PORT = os.environ.get("TP_PRINTER_PORT", "")
-PRINTLABEL_STI = Path(
-    os.environ.get("TP_PRINTLABEL", ROT / "vendor" / "PT-P300BT" / "printlabel.py")
+# labelmaker.py, IKKE printlabel.py: sistnevntes -i/--image er dodt i commit
+# 27bb7bc (args.image brukes bare til aa hoppe over render-blokken, og da ryker
+# "assert data is not None"). labelmaker.py kaller read_png() og virker.
+LABELMAKER_STI = Path(
+    os.environ.get("TP_LABELMAKER", ROT / "vendor" / "PT-P300BT" / "labelmaker.py")
 )
+# QR paa etiketten. Av som standard til vi har skannet en ekte en fra tape.
+QR_PA_ETIKETT = os.environ.get("TP_QR_PA_ETIKETT", "0") == "1"
+QR_URL = os.environ.get("TP_QR_URL", "TYHOLTPIZZERIA.AFRASUM.DEV")
 PRINT_TIDSAVBRUDD = int(os.environ.get("TP_PRINT_TIDSAVBRUDD", "30"))
 PRINT_MAKS_FORSOK = int(os.environ.get("TP_PRINT_MAKS_FORSOK", "3"))
 
