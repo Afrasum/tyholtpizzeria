@@ -1,1023 +1,993 @@
-/* Tyholt Pizzeria — «sot og tape».
- *
- * Emnet er et to-kvelders popup i en leilighet: tre pizzaer, 59 kr, en
- * labelmaker pa bordet og et nummer som ropes over rommet. Det mest
- * karakteristiske i den verdenen er ETIKETTEN, sa den er designspraket.
- *
- * Grunnen er sot — ovnens innside. Alt viktig sitter pa hvite tapestrimler
- * med harde kanter. En industrigul aksent, brukt bare der noe skal gjores.
- *
- * To skriftstemmer, som svarer til de to ekte artefaktene: Archivo Black er
- * skiltet, Martian Mono er tapen. Tall, priser og statuser er ALLTID mono —
- * det er tapens stemme, og den skal vaere gjenkjennelig pa tvers av de tre
- * skjermene.
- *
- * Mobil forst. Kunden staar med telefon; kjokkenet ogsa.
- */
+/* Tyholt Pizzeria — «papir og tomat»
+   ---------------------------------------------------------------------------
+   Paletten er hentet fra plakatene: solbleket papir, tomatrødt, basilikum og
+   en mørk brun som bunnfarge der noe skal lene seg fram (tavla, betalingen,
+   klistrekurven). Fraunces bærer stemmen, Inter bærer teksten, og mono er
+   forbeholdt tall som skal leses raskt: nummer, kode, kroner.
 
-/* ── Tokens ─────────────────────────────────────────────────────────────── */
+   Rekkefølge: tokens → grunn → typografi → felles komponenter → kundeside →
+   kvittering → admin → tavla → småsider. Én seksjon per flate, ingen
+   selektor som kjemper mot en annen lenger nede.
+   -------------------------------------------------------------------------- */
 
 :root {
-	/* Sot: varm naersvart, ikke blaa-svart. */
-	--sot:        #16120f;
-	--sot-hev:    #211b16;
-	--sot-kant:   #33291f;
+  /* Flater, fra lysest til mørkest */
+  --kvittering: #fbf7ee;   /* inputfelt, kvitteringspapir */
+  --papir: #f0e4cc;        /* kort */
+  --papir-varm: #eadcbf;   /* notiser, styringsbokser */
+  --fersken: #efd1bb;      /* sidebakgrunn */
+  --mork: #3d2a1e;         /* tavle, betaling, klistrekurv */
+  --morkere: #14100c;
 
-	/* Tape: laminert etikett, svakt varm hvit. */
-	--tape:       #f7f4ec;
-	--tape-tekst: #14100c;
-	--tape-svak:  #6f675d;
+  /* Blekk */
+  --blekk: #1e140e;
+  --blekk-mild: #5a4838;
+  --blekk-svak: #b6a48c;
 
-	/* Tekst pa sot. */
-	--paa-sot:      #f2ede3;
-	--paa-sot-svak: #9a9188;
+  /* Aksenter */
+  --tomat: #c63a2a;
+  --tomat-mork: #a32e20;
+  --basilikum: #4f6a2e;
+  --honning: #b8863f;
+  --korn: #e8be7a;         /* gul som tåler mørk bunn */
+  --skinke: #e8a896;
 
-	/* Industrigul: eneste aksent. Betyr «gjor dette» eller «klar». */
-	--gul:        #e8be2a;
-	--gul-mork:   #8a7013;
+  --linje: rgba(30, 20, 14, .15);
+  --linje-sterk: rgba(30, 20, 14, .2);
+  --linje-lys: rgba(240, 228, 204, .3);
 
-	/* Semantisk, bare i admin. */
-	--klar:       #8ab873;
-	--feil:       #e2574c;
-	--vent:       #d99a3c;
+  --skilt: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --brod: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
 
-	--tape-radius: 2px;   /* tape har nesten skarpe hjorner */
-	--strek: 1px solid var(--sot-kant);
-
-	--mono: "Martian Mono", ui-monospace, "SF Mono", Menlo, monospace;
-	--sans: "Archivo", ui-sans-serif, system-ui, -apple-system, sans-serif;
-	--skilt: "Archivo Black", "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --rund: 16px;
+  --rund-liten: 12px;
+  --pille: 999px;
 }
+
+/* ── Grunn ────────────────────────────────────────────────────────────── */
 
 *, *::before, *::after { box-sizing: border-box; }
 
 html { -webkit-text-size-adjust: 100%; }
 
 body {
-	margin: 0;
-	background: var(--sot);
-	color: var(--paa-sot);
-	/* 16px grunnfont sa iOS ikke zoomer inn nar man trykker i et felt. */
-	font: 400 16px/1.55 var(--sans);
-	-webkit-font-smoothing: antialiased;
+  margin: 0;
+  background: var(--fersken);
+  color: var(--blekk);
+  font-family: var(--brod);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Synlig tastaturfokus overalt, ogsa pa tape. */
+a { color: var(--tomat); }
+a:hover { color: var(--tomat-mork); }
+
+::selection { background: var(--tomat); color: var(--papir); }
+
+/* Tastaturfokus skal alltid være synlig, også på mørk bunn. */
 :focus-visible {
-	outline: 3px solid var(--gul);
-	outline-offset: 2px;
+  outline: 3px solid var(--tomat);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.skjerm-side :focus-visible,
+.betaling :focus-visible,
+.styringsboks.farlig :focus-visible { outline-color: var(--korn); }
+
+img, svg { max-width: 100%; }
+
+/* ── Typografi ────────────────────────────────────────────────────────── */
+
+h1, h2, h3 {
+  font-family: var(--skilt);
+  font-weight: 400;
+  letter-spacing: -.03em;
+  line-height: 1.02;
+  margin: 0;
 }
 
-a { color: var(--gul); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+/* opsz er optisk størrelse: Fraunces blir smalere og strammere jo større den
+   settes. Uten dette ser en 76px-overskrift ut som en oppblåst brødtekst. */
+h1 { font-size: 2.5rem; font-variation-settings: "opsz" 96, "SOFT" 100; }
+h2 { font-size: 2rem;   font-variation-settings: "opsz" 72, "SOFT" 100; }
+h3 { font-size: 1.5rem; font-variation-settings: "opsz" 48; }
 
-/* ── Skiltstemmen ───────────────────────────────────────────────────────── */
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
-.skilt {
-	font-family: var(--skilt);
-	text-transform: uppercase;
-	letter-spacing: -0.02em;
-	line-height: 0.92;
-	margin: 0;
+/* Kursiv Fraunces er stemmen i teksten — bruk den til korte innskudd, aldri
+   til noe som skal leses raskt. */
+.stemme {
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 24;
+  color: var(--tomat);
 }
 
-/* Mono er tapens stemme: tall, priser, koder, statuser. */
-.mono, .kode, .pris, .nr {
-	font-family: var(--mono);
-	font-variant-numeric: tabular-nums;
+/* ── Felles komponenter ───────────────────────────────────────────────── */
+
+.side {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 0 1.25rem 4rem;
 }
 
-.oyebryn {
-	font-family: var(--mono);
-	font-size: .6875rem;
-	letter-spacing: .14em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	margin: 0;
+.knapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-height: 46px;
+  padding: .7rem 1.25rem;
+  border: 1px solid var(--linje-sterk);
+  border-radius: var(--pille);
+  background: var(--kvittering);
+  color: var(--blekk);
+  font-family: var(--brod);
+  font-size: .95rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.knapp:hover { border-color: var(--tomat); color: var(--tomat); }
+
+.knapp.primar {
+  border: none;
+  background: var(--tomat);
+  color: var(--papir);
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 32;
+  font-size: 1.15rem;
+  min-height: 54px;
+}
+.knapp.primar:hover { background: var(--tomat-mork); color: var(--papir); }
+
+.knapp.fare { border-color: var(--tomat); color: var(--tomat); }
+.knapp.fare:hover { background: var(--tomat); color: var(--papir); }
+
+.knapp.liten { min-height: 40px; padding: .45rem .95rem; font-size: .9rem; }
+
+.knapp[disabled] {
+  background: var(--blekk-svak);
+  border-color: transparent;
+  color: var(--kvittering);
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
-/* ── Sidebredder ────────────────────────────────────────────────────────── */
+/* Skjemaer sendes med ekte POST. `inline` er bare for å la en rad med
+   knapper ligge på linje uten at hver form tar full bredde. */
+form.inline { display: inline; }
 
-.side { max-width: 34rem; margin: 0 auto; padding: 1.75rem 1.125rem 5rem; }
-.side.admin { max-width: 82rem; padding-inline: 1rem; }
+label { display: block; }
 
-/* ── Tapestrimmel: signaturen ───────────────────────────────────────────── */
-/*
- * En hvit lapp pa sot grunn. Kanten til hoyre er «avrevet»: en tynn skygge
- * som antyder at tapen fortsetter. Brukes til menyretter, kvitteringen og
- * ordrekortene i admin — en ide, flere steder.
- */
-
-.tape {
-	position: relative;
-	background: var(--tape);
-	color: var(--tape-tekst);
-	border-radius: var(--tape-radius);
-	padding: 1rem 1.125rem;
-	box-shadow: 0 1px 0 rgba(0,0,0,.5), 0 8px 20px -12px rgba(0,0,0,.9);
+.navn-paa-felt {
+  display: block;
+  margin-bottom: .45rem;
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 18;
+  font-size: 1.05rem;
 }
+.navn-paa-felt .valgfritt { color: var(--blekk-mild); font-style: normal; }
 
-/* Perforeringen langs venstre kant — den lille detaljen som gjor at det
- * leses som tape og ikke som et kort. */
-.tape::before {
-	content: "";
-	position: absolute;
-	inset: .5rem auto .5rem 0;
-	width: 3px;
-	background: repeating-linear-gradient(
-		to bottom,
-		var(--tape-svak) 0 2px,
-		transparent 2px 6px
-	);
-	opacity: .35;
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"] {
+  width: 100%;
+  height: 58px;
+  padding: 0 1rem;
+  border: 1px solid var(--linje-sterk);
+  border-radius: var(--rund-liten);
+  background: var(--kvittering);
+  color: var(--blekk);
+  font-family: var(--brod);
+  font-size: 1.1rem;
 }
+input:focus { outline: none; border-color: var(--tomat); box-shadow: 0 0 0 3px rgba(198, 58, 42, .18); }
 
-/* ── Masthead ───────────────────────────────────────────────────────────── */
-
-.topp { margin-bottom: 1.75rem; }
-
-.topp .navn {
-	font-family: var(--skilt);
-	text-transform: uppercase;
-	letter-spacing: -0.03em;
-	line-height: .88;
-	/* Stort, men aldri bredere enn skjermen. */
-	font-size: clamp(2.75rem, 17vw, 5rem);
-	margin: 0;
-}
-.topp .navn span { display: block; }
-.topp .navn .to { color: var(--gul); }
-
-.topp .fakta {
-	display: flex;
-	flex-wrap: wrap;
-	gap: .35rem .9rem;
-	margin: 1rem 0 0;
-	padding-top: .85rem;
-	border-top: var(--strek);
-}
-.topp .fakta li {
-	font-family: var(--mono);
-	font-size: .6875rem;
-	letter-spacing: .1em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	list-style: none;
-}
-.topp .fakta { padding-left: 0; }
-
-/* ── Varsler ────────────────────────────────────────────────────────────── */
+small { display: block; margin-top: .4rem; font-size: .875rem; color: var(--blekk-mild); line-height: 1.45; }
 
 .varsel {
-	font-family: var(--mono);
-	font-size: .8125rem;
-	line-height: 1.5;
-	padding: .8rem .95rem;
-	border-left: 3px solid var(--gul);
-	background: var(--sot-hev);
-	color: var(--paa-sot);
-	margin: 1rem 0;
-	border-radius: 0 var(--tape-radius) var(--tape-radius) 0;
+  margin: 0 0 1.5rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--rund);
+  background: var(--papir-varm);
+  border: 1px solid var(--linje);
+  font-size: 1rem;
+  line-height: 1.5;
 }
-.varsel.feil { border-color: var(--feil); }
-.varsel.stengt { border-color: var(--paa-sot-svak); }
+.varsel.stengt { background: var(--mork); border-color: transparent; color: var(--papir); }
+.varsel.feil { border: 1px dashed rgba(198, 58, 42, .55); color: var(--tomat); }
 
-/* ── Meny ───────────────────────────────────────────────────────────────── */
+/* ── Kundesida: hodet ─────────────────────────────────────────────────── */
 
-.meny h2, .dine-opplysninger h2 {
-	font-family: var(--mono);
-	font-size: .6875rem;
-	letter-spacing: .16em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	font-weight: 400;
-	margin: 2.25rem 0 .75rem;
-}
+.topp { padding: 2.75rem 0 1.9rem; text-align: center; }
 
-.menyliste { list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem; }
-
-.menyrett { display: grid; grid-template-columns: 2.75rem 1fr; gap: 0 .9rem; }
-
-/* Kodebokstaven. Dette ER systemet: samme bokstav blir printet pa esken. */
-.menyrett .kode {
-	grid-row: 1 / -1;
-	font-size: 2rem;
-	font-weight: 700;
-	line-height: 1;
-	color: var(--tape-tekst);
-	padding-top: .1rem;
-	text-align: center;
-	border-right: 1px dashed rgba(0,0,0,.18);
-	padding-right: .6rem;
-	margin-right: .3rem;
-	align-self: start;
+.stedet {
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 14;
+  color: var(--tomat);
+  font-size: 1.05rem;
+  margin: 0 0 .85rem;
 }
 
-.menyrett .rett-hode {
-	display: flex;
-	justify-content: space-between;
-	align-items: baseline;
-	gap: .75rem;
+.navn {
+  font-size: clamp(3.25rem, 15vw, 4.75rem);
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+  line-height: .9;
+  letter-spacing: -.035em;
+  margin: 0;
 }
-.menyrett h3 {
-	font-family: var(--sans);
-	font-weight: 700;
-	font-size: 1.0625rem;
-	letter-spacing: -0.01em;
-	margin: 0;
-	color: var(--tape-tekst);
-}
-.menyrett .pris { font-size: .9375rem; font-weight: 600; white-space: nowrap; }
+.navn .ord-to { display: block; font-style: italic; color: var(--tomat); }
 
-.menyrett .ingredienser {
-	margin: .3rem 0 0;
-	font-size: .875rem;
-	color: var(--tape-svak);
+/* Basilikumbladet erstatter prikken over i-en. Bokstaven er en prikkløs ı, så
+   bladet ikke kolliderer med noe. */
+.i-med-blad { position: relative; display: inline-block; }
+.i-med-blad .blad {
+  position: absolute;
+  top: -.08em;
+  left: 50%;
+  width: .3em;
+  height: .4em;
+  transform: translate(calc(-50% + .05em), 0);
+  pointer-events: none;
 }
 
-.menyrett .allergener {
-	margin: .5rem 0 0;
-	font-family: var(--mono);
-	font-size: .625rem;
-	letter-spacing: .07em;
-	text-transform: uppercase;
-	color: var(--tape-svak);
-	line-height: 1.6;
+.fakta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .5rem;
+  margin: 1.6rem 0 0;
+  padding: 0;
+  list-style: none;
 }
-.menyrett .allergener b { color: var(--tape-tekst); font-weight: 700; }
+.fakta li {
+  padding: .55rem 1rem;
+  border: 1px solid var(--linje);
+  border-radius: var(--pille);
+  background: var(--papir);
+  font-size: .95rem;
+  font-weight: 500;
+}
+.fakta li:last-child { background: var(--tomat); border-color: transparent; color: var(--papir); font-weight: 600; }
 
-.menyrett.utsolgt { opacity: .5; }
-.menyrett.utsolgt .kode { text-decoration: line-through; }
+/* ── Kundesida: menyen ────────────────────────────────────────────────── */
+
+.meny > h2 { margin-bottom: .35rem; font-size: 2.5rem; font-variation-settings: "opsz" 96, "SOFT" 100; }
+.meny .ingress { margin: 0 0 1.5rem; }
+
+.menyliste { display: flex; flex-direction: column; gap: 1.15rem; margin: 0; padding: 0; list-style: none; }
+
+.menyrett {
+  display: flex;
+  flex-direction: column;
+  gap: .9rem;
+  padding: 1.25rem;
+  border: 1px solid var(--linje);
+  border-radius: 18px;
+  background: var(--papir);
+}
+.menyrett.utsolgt { opacity: .62; }
+
+.rett-hode { display: flex; gap: 1rem; align-items: flex-start; }
+
+.tegning {
+  flex: 0 0 96px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(79, 106, 46, .18), rgba(79, 106, 46, 0) 68%);
+}
+.tegning svg { display: block; width: 100%; height: 100%; }
+
+.rett-tekst { min-width: 0; }
+
+.tittelrad { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+
+/* Kodebokstaven er ikke pynt: det er nøyaktig den som blir printet på
+   etiketten som havner på pizzaesken. */
+.kode {
+  padding: .18rem .5rem;
+  border-radius: 4px;
+  background: var(--blekk);
+  color: var(--papir);
+  font-family: var(--mono);
+  font-size: .8rem;
+  font-weight: 700;
+}
+
+.menyrett h3 { font-size: 1.75rem; font-variation-settings: "opsz" 60; letter-spacing: -.02em; text-wrap: balance; }
+
+.undertittel {
+  margin: .5rem 0 0;
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 18;
+  font-size: 1.05rem;
+  color: var(--blekk-mild);
+}
+
+.ingredienser { margin: 0; font-size: 1rem; line-height: 1.5; }
+
+.allergener {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: .875rem;
+  color: var(--blekk-mild);
+}
+.allergener .merke { font-family: var(--skilt); font-style: italic; }
+.allergener .stoff { display: inline-flex; align-items: center; gap: .35rem; }
+.allergener .ikon { width: 22px; height: 22px; flex: 0 0 22px; }
+
 .utsolgt-merke {
-	margin: .6rem 0 0;
-	font-family: var(--mono);
-	font-size: .6875rem;
-	letter-spacing: .12em;
-	text-transform: uppercase;
-	color: var(--feil);
-	font-weight: 700;
+  margin: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--linje);
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 36;
+  font-size: 1.25rem;
+  color: var(--tomat);
 }
 
-/* Antallsvelger. Store nok flater for tommel. */
+/* Teller rundt et ekte number-felt: virker uten JS, bedre med. */
 .antall {
-	display: flex;
-	align-items: center;
-	gap: .5rem;
-	margin: .85rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding-top: .9rem;
+  border-top: 1px solid var(--linje);
 }
 .antall .merkelapp {
-	font-family: var(--mono);
-	font-size: .625rem;
-	letter-spacing: .12em;
-	text-transform: uppercase;
-	color: var(--tape-svak);
-	margin-right: auto;
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .antall button {
-	width: 2.75rem;
-	height: 2.75rem;
-	flex: none;
-	font-family: var(--mono);
-	font-size: 1.125rem;
-	line-height: 1;
-	border: 1px solid rgba(0,0,0,.22);
-	background: transparent;
-	color: var(--tape-tekst);
-	border-radius: var(--tape-radius);
-	cursor: pointer;
+  flex: 1;
+  height: 62px;
+  border: 1px solid var(--linje-sterk);
+  border-radius: var(--pille);
+  background: var(--kvittering);
+  color: var(--blekk);
+  font-size: 1.85rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
 }
-.antall button:hover { background: rgba(0,0,0,.06); }
-.antall button:active { background: rgba(0,0,0,.12); }
+.antall button:hover { background: var(--tomat); border-color: var(--tomat); color: var(--papir); }
 .antall input {
-	width: 3rem;
-	height: 2.75rem;
-	flex: none;
-	text-align: center;
-	font-family: var(--mono);
-	font-size: 1rem;
-	font-weight: 700;
-	border: 1px solid rgba(0,0,0,.22);
-	border-radius: var(--tape-radius);
-	background: #fff;
-	color: var(--tape-tekst);
-	-moz-appearance: textfield;
+  width: 4rem;
+  flex: 0 0 4rem;
+  height: 62px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-family: var(--skilt);
+  font-variation-settings: "opsz" 60;
+  font-size: 2.1rem;
+  -moz-appearance: textfield;
 }
+.antall input:focus { box-shadow: none; border-bottom: 2px solid var(--tomat); border-radius: 0; }
 .antall input::-webkit-outer-spin-button,
 .antall input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-/* Den globale spor-lista. Juridisk innhold, satt som smaatrykk pa tape. */
 .spor {
-	margin: 1.25rem 0 0;
-	padding: .9rem 1rem;
-	background: var(--sot-hev);
-	border: var(--strek);
-	border-radius: var(--tape-radius);
-	font-family: var(--mono);
-	font-size: .625rem;
-	line-height: 1.7;
-	letter-spacing: .05em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
+  margin: 1.4rem 0 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--linje);
+  border-radius: 14px;
+  background: var(--papir-varm);
+  font-size: .95rem;
+  line-height: 1.5;
+  color: var(--blekk-mild);
 }
-.spor b { color: var(--paa-sot); }
+.spor b { color: var(--blekk); }
 
-/* ── Skjema ─────────────────────────────────────────────────────────────── */
+/* ── Kundesida: dine opplysninger ─────────────────────────────────────── */
 
-.dine-opplysninger label { display: block; margin: 0 0 1.1rem; }
-
-.dine-opplysninger label .navn-paa-felt {
-	display: block;
-	font-family: var(--mono);
-	font-size: .6875rem;
-	letter-spacing: .12em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	margin-bottom: .4rem;
-}
-.dine-opplysninger label small {
-	display: block;
-	margin-top: .35rem;
-	font-size: .8125rem;
-	color: var(--paa-sot-svak);
-}
-.valgfritt { color: var(--paa-sot-svak); }
-
-input[type=text], input[type=email], input[type=password] {
-	width: 100%;
-	font: 400 1rem/1.4 var(--sans);
-	padding: .8rem .85rem;
-	color: var(--paa-sot);
-	background: var(--sot-hev);
-	border: 1px solid var(--sot-kant);
-	border-radius: var(--tape-radius);
-	min-height: 3rem;
-}
-input::placeholder { color: var(--paa-sot-svak); }
-
-.lofte {
-	display: flex;
-	gap: .7rem;
-	align-items: flex-start;
-	padding: .95rem 1rem;
-	background: var(--sot-hev);
-	border: var(--strek);
-	border-radius: var(--tape-radius);
-	font-size: .9375rem;
-	line-height: 1.45;
-	cursor: pointer;
-}
-.lofte input {
-	width: 1.35rem;
-	height: 1.35rem;
-	flex: none;
-	margin: .05rem 0 0;
-	accent-color: var(--gul);
-}
+.dine-opplysninger { margin-top: 2.75rem; }
+.dine-opplysninger > h2 { margin-bottom: .35rem; font-size: 2.5rem; font-variation-settings: "opsz" 96, "SOFT" 100; }
+.dine-opplysninger .ingress { margin: 0 0 1.5rem; }
+.dine-opplysninger label { margin-bottom: 1.15rem; }
 
 .betalingslofte {
-	margin: 1.25rem 0;
-	font-size: .9375rem;
-	line-height: 1.55;
-	color: var(--paa-sot-svak);
+  margin: 0 0 1.15rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--linje);
+  border-radius: 14px;
+  background: var(--papir-varm);
+  font-size: 1rem;
+  line-height: 1.5;
 }
-.betalingslofte b { color: var(--paa-sot); font-family: var(--mono); }
 
-/* Hovedhandlingen. Den ene gule flaten pa sida. */
+.lofte {
+  display: flex;
+  align-items: center;
+  gap: .875rem;
+  margin-bottom: 1.15rem;
+  padding: 1.25rem;
+  border: 1px solid var(--linje-sterk);
+  border-radius: 14px;
+  background: var(--papir);
+  font-size: 1.1rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+.lofte:hover { border-color: var(--tomat); }
+.lofte input {
+  width: 28px; height: 28px;
+  flex: 0 0 28px;
+  accent-color: var(--tomat);
+  cursor: pointer;
+}
+
 .bestill-knapp {
-	display: block;
-	width: 100%;
-	margin: 1.35rem 0 .6rem;
-	padding: 1.05rem 1rem;
-	font-family: var(--skilt);
-	font-size: 1.0625rem;
-	text-transform: uppercase;
-	letter-spacing: .04em;
-	color: #14100c;
-	background: var(--gul);
-	border: none;
-	border-radius: var(--tape-radius);
-	cursor: pointer;
-	min-height: 3.25rem;
+  width: 100%;
+  min-height: 70px;
+  border: none;
+  border-radius: var(--pille);
+  background: var(--tomat);
+  color: var(--papir);
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 32;
+  font-size: 1.45rem;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(198, 58, 42, .24);
+  transition: background .15s;
 }
-.bestill-knapp:hover { background: #f2c93b; }
-.bestill-knapp:active { transform: translateY(1px); }
+.bestill-knapp:hover { background: var(--tomat-mork); }
 
-.maks-merknad {
-	margin: 0;
-	font-family: var(--mono);
-	font-size: .625rem;
-	letter-spacing: .1em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
+.maks-merknad { margin: .75rem 0 0; text-align: center; font-size: .95rem; color: var(--blekk-mild); }
+
+/* Klistrekurven følger deg nedover sida så totalen alltid er synlig. Den
+   dukker først opp når det faktisk ligger noe i den. */
+.kurv {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: .875rem;
+  padding: .875rem 1.15rem calc(.875rem + env(safe-area-inset-bottom));
+  background: var(--mork);
+  box-shadow: 0 -8px 24px rgba(30, 20, 14, .28);
+}
+.kurv[hidden] { display: none; }
+.kurv .sum { flex: 1; min-width: 0; color: var(--papir); }
+.kurv .belop { font-family: var(--skilt); font-variation-settings: "opsz" 60; font-size: 1.6rem; line-height: 1.1; }
+.kurv .antall-tekst { font-size: .875rem; opacity: .75; }
+.kurv .videre {
+  flex: 0 0 auto;
+  padding: 1.1rem 1.75rem;
+  border-radius: var(--pille);
+  background: var(--tomat);
+  color: var(--papir);
+  text-decoration: none;
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 32;
+  font-size: 1.3rem;
+}
+.kurv .videre:hover { background: var(--tomat-mork); color: var(--papir); }
+
+/* Plass til kurven, slik at den aldri dekker sendeknappen. */
+.kunde { padding-bottom: 11rem; }
+
+/* ── Kundesida: bunnen ────────────────────────────────────────────────── */
+
+.bunn {
+  margin-top: 3.5rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--linje);
+  text-align: center;
+}
+.bunn .slagord {
+  margin: 0 0 1rem;
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 96, "SOFT" 100;
+  font-size: 1.85rem;
+  line-height: 1.1;
+  color: var(--tomat);
+}
+.bunn .kontakt { display: flex; flex-direction: column; gap: .5rem; font-size: .95rem; color: var(--blekk-mild); }
+.bunn .kontakt a { text-decoration: none; }
+.bunn .adresse { align-self: center; padding-bottom: 2px; border-bottom: 1px solid rgba(30, 20, 14, .25); color: var(--blekk); }
+
+/* ── Kvittering ───────────────────────────────────────────────────────── */
+
+.kvittering-side { padding-top: 2.75rem; }
+
+.takk {
+  margin: 0 0 1.6rem;
+  font-family: var(--skilt);
+  font-variation-settings: "opsz" 36;
+  font-size: 1.6rem;
+  line-height: 1.25;
 }
 
-/* ── Kvittering ─────────────────────────────────────────────────────────── */
-/*
- * Nummeret vises som en faksimile av den fysiske etiketten kunden kommer til
- * a finne pa esken sin. Samme kode, samme oppsett, samme mono.
- */
-
-.kvittering .takk {
-	font-family: var(--mono);
-	font-size: .6875rem;
-	letter-spacing: .14em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	margin: 0 0 .85rem;
-}
-
+/* Faksimile av den fysiske etiketten som havner på esken. Samme kode, samme
+   nummer, samme mono som tapen kokken leser. */
 .etikett-faksimile {
-	display: grid;
-	grid-template-columns: auto 1fr;
-	align-items: center;
-	gap: 0 1rem;
-	padding: 1.15rem 1.25rem;
-	margin-bottom: .85rem;
+  position: relative;
+  padding: 1.6rem 1.5rem;
+  border-radius: 4px;
+  background: var(--kvittering);
+  box-shadow: 0 10px 24px -14px rgba(30, 20, 14, .55);
+}
+.etikett-faksimile::before {
+  content: "";
+  position: absolute;
+  left: 8px; top: 12px; bottom: 12px;
+  width: 3px;
+  opacity: .35;
+  background: repeating-linear-gradient(to bottom, #6f675d 0 2px, transparent 2px 6px);
 }
 .etikett-faksimile .hovedkode {
-	font-family: var(--mono);
-	font-weight: 700;
-	font-size: clamp(3.25rem, 19vw, 5rem);
-	line-height: .85;
-	letter-spacing: -0.04em;
-	color: var(--tape-tekst);
+  display: block;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 3.75rem;
+  line-height: 1;
+  letter-spacing: -.02em;
+  color: var(--morkere);
 }
-.etikett-faksimile .bi {
-	font-family: var(--mono);
-	font-size: .8125rem;
-	line-height: 1.5;
-	color: var(--tape-svak);
-	text-transform: uppercase;
-	letter-spacing: .06em;
-}
-.etikett-faksimile .bi b { display: block; color: var(--tape-tekst); }
+.etikett-faksimile .bi { display: block; margin-top: .7rem; font-size: 1rem; color: #6f675d; }
+.etikett-faksimile .bi b { color: var(--morkere); }
 
-.etikett-under {
-	font-family: var(--mono);
-	font-size: .625rem;
-	letter-spacing: .12em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	margin: 0 0 1.75rem;
-}
+.etikett-under { margin: .75rem 0 1.9rem; text-align: center; font-size: .875rem; color: var(--blekk-mild); }
 
 .status-boks {
-	display: flex;
-	align-items: center;
-	gap: .65rem;
-	padding: .85rem 1rem;
-	border: var(--strek);
-	border-radius: var(--tape-radius);
-	background: var(--sot-hev);
-	margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: .875rem;
+  margin-bottom: 1.9rem;
+  padding: 1.25rem;
+  border: 1px solid var(--linje);
+  border-radius: 14px;
+  background: var(--papir);
 }
 .status-boks .lampe {
-	width: .6rem; height: .6rem; flex: none;
-	border-radius: 50%;
-	background: var(--vent);
+  width: 16px; height: 16px;
+  flex: 0 0 16px;
+  border-radius: 50%;
+  background: var(--honning);
+  animation: lampe 1.8s ease-in-out infinite;
 }
-.status-boks[data-status="klar"] .lampe { background: var(--klar); }
-.status-boks[data-status="levert"] .lampe { background: var(--paa-sot-svak); }
-.status-boks .tekst {
-	font-family: var(--mono);
-	font-size: .8125rem;
-	letter-spacing: .08em;
-	text-transform: uppercase;
-}
+.status-boks .tekst { font-family: var(--skilt); font-variation-settings: "opsz" 36; font-size: 1.5rem; }
+.status-boks[data-status="i_produksjon"] .lampe { background: var(--tomat); }
+.status-boks[data-status="klar"] .lampe { background: var(--basilikum); animation: none; }
+.status-boks[data-status="klar"] { border-color: var(--basilikum); }
+.status-boks[data-status="levert"] .lampe,
+.status-boks[data-status="forlatt"] .lampe,
+.status-boks[data-status="avbrutt"] .lampe { background: var(--blekk-svak); animation: none; }
 
-.kvittering h2 {
-	font-family: var(--mono);
-	font-size: .6875rem;
-	letter-spacing: .16em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	font-weight: 400;
-	margin: 0 0 .7rem;
-}
-
-.bestilt ul { list-style: none; padding: 0; margin: 0 0 .8rem; }
-.bestilt li {
-	display: flex;
-	justify-content: space-between;
-	gap: 1rem;
-	padding: .6rem 0;
-	border-bottom: var(--strek);
-	font-size: .9375rem;
-}
-.bestilt li .antall-kode {
-	font-family: var(--mono);
-	color: var(--paa-sot-svak);
-	margin-right: .5rem;
-}
-.total {
-	display: flex;
-	justify-content: space-between;
-	margin: 0 0 2rem;
-	font-family: var(--mono);
-	font-size: 1.0625rem;
-	font-weight: 700;
-}
+@keyframes lampe { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
 .betaling {
-	padding: 1.15rem 1.25rem;
-	border: 1px solid var(--gul-mork);
-	border-radius: var(--tape-radius);
-	background: linear-gradient(var(--sot-hev), var(--sot-hev)) padding-box;
-	margin-bottom: 1.5rem;
+  padding: 1.6rem 1.5rem;
+  border-radius: 18px;
+  background: var(--mork);
+  color: var(--papir);
 }
-.betaling .belop {
-	font-family: var(--mono);
-	font-size: 2rem;
-	font-weight: 700;
-	letter-spacing: -0.02em;
-	margin: .1rem 0 0;
-	color: var(--paa-sot);
-}
-.betaling .til {
-	font-family: var(--mono);
-	font-size: .75rem;
-	letter-spacing: .1em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	margin: 0 0 1rem;
-}
+.betaling h2 { margin-bottom: 1.15rem; font-size: 1.9rem; font-variation-settings: "opsz" 60, "SOFT" 100; }
+.betaling .belop { margin: 0; font-family: var(--mono); font-size: 2.75rem; font-weight: 700; line-height: 1; word-spacing: -.28em; }
+.betaling .til { margin: .5rem 0 1.4rem; font-size: 1.05rem; opacity: .8; }
 
-/* Hovedhandlingen pa kvitteringen. Apner Vipps direkte med belop og
- * mottaker utfylt — kunden skal bare skrive nummeret sitt som melding. */
 .vipps-knapp {
-	display: block;
-	text-align: center;
-	text-decoration: none;
-	padding: 1rem;
-	margin-bottom: .9rem;
-	font-family: var(--skilt);
-	font-size: 1.0625rem;
-	text-transform: uppercase;
-	letter-spacing: .04em;
-	color: #14100c;
-	background: var(--gul);
-	border-radius: var(--tape-radius);
-	min-height: 3.25rem;
+  display: block;
+  min-height: 60px;
+  margin-bottom: 1.15rem;
+  padding: 1rem;
+  border-radius: var(--pille);
+  background: var(--korn);
+  color: var(--morkere);
+  text-align: center;
+  text-decoration: none;
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 32;
+  font-size: 1.3rem;
+  line-height: 1.6;
 }
-.vipps-knapp:hover { background: #f2c93b; }
-.vipps-knapp:active { transform: translateY(1px); }
+.vipps-knapp:hover { background: #f2cd8c; color: var(--morkere); }
 
-.melding-hint { margin: 0 0 1rem; font-size: .9375rem; line-height: 1.5; }
-
-.vipps-nummer-linje {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: .5rem;
-	margin: 0 0 .75rem;
-	padding-top: .85rem;
-	border-top: var(--strek);
-	font-size: .875rem;
-	color: var(--paa-sot-svak);
-}
-.vipps-nummer-linje .mono { color: var(--paa-sot); font-size: .9375rem; }
-.knapp.liten { min-height: 2.25rem; padding: .35rem .6rem; font-size: .625rem; }
-
-.betaling p { margin: 0 0 .5rem; font-size: .9375rem; line-height: 1.5; }
-.betaling .melding-kode {
-	font-family: var(--mono);
-	font-weight: 700;
-	color: var(--paa-sot);
-}
-.betaling .knapp { margin: .35rem 0 .75rem; }
-.vis-ved-henting { margin: 0; font-size: .875rem; color: var(--paa-sot-svak); }
-
-.epost-kvittering {
-	margin: 0;
-	padding: .9rem 1rem;
-	border: var(--strek);
-	border-radius: var(--tape-radius);
-	background: var(--sot-hev);
-	font-size: .875rem;
-	line-height: 1.55;
-	color: var(--paa-sot-svak);
-}
-.epost-kvittering b { color: var(--paa-sot); font-family: var(--mono); font-size: .8125rem; }
-
-.tips {
-	font-family: var(--mono);
-	font-size: .625rem;
-	letter-spacing: .1em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	margin: 0;
+.melding-hint { margin: 0 0 1.15rem; font-size: 1.05rem; line-height: 1.5; }
+.melding-kode {
+  padding: .12rem .5rem;
+  border-radius: 4px;
+  background: var(--papir);
+  color: var(--blekk);
+  font-family: var(--mono);
+  font-weight: 700;
 }
 
-/* ── Admin ──────────────────────────────────────────────────────────────── */
+.vipps-nummer-linje { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin: 0; font-size: 1.05rem; }
+.vipps-nummer-linje .knapp { border-color: var(--linje-lys); background: transparent; color: var(--papir); }
+.vipps-nummer-linje .knapp:hover { background: rgba(240, 228, 204, .14); border-color: var(--linje-lys); color: var(--papir); }
+
+.vis-ved-henting { margin: 1.4rem 0 0; font-size: .95rem; opacity: .75; }
+
+.bestilt { margin-top: 1.9rem; }
+.bestilt h2 { margin-bottom: 1rem; font-size: 1.9rem; font-variation-settings: "opsz" 60, "SOFT" 100; }
+.bestilt ul { margin: 0; padding: 0; list-style: none; }
+.bestilt li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .875rem 0;
+  border-bottom: 1px dashed rgba(30, 20, 14, .2);
+  font-size: 1.05rem;
+}
+.bestilt li .mono { word-spacing: -.28em; }
+.bestilt .antall-kode { word-spacing: normal; margin-right: .4rem; font-size: .9rem; color: var(--blekk-mild); }
+.bestilt .total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 1.15rem 0 0;
+  font-family: var(--skilt);
+  font-variation-settings: "opsz" 60;
+  font-size: 1.5rem;
+}
+.bestilt .total span:last-child { font-style: italic; font-size: 1.85rem; color: var(--tomat); }
+
+.epost-kvittering, .tips {
+  margin: 1.9rem 0 0;
+  text-align: center;
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 24;
+  font-size: 1.1rem;
+  color: var(--blekk-mild);
+  line-height: 1.5;
+}
+.epost-kvittering b { font-style: normal; color: var(--blekk); }
+
+/* ── Admin ────────────────────────────────────────────────────────────── */
+
+.admin { max-width: 74rem; padding-top: 2rem; }
 
 .admin-topp {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: .75rem 1.25rem;
-	padding: 1.25rem 0 1rem;
-	border-bottom: var(--strek);
-	margin-bottom: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.15rem;
+  padding-bottom: 1.4rem;
+  border-bottom: 1px solid var(--linje);
 }
-.admin-topp h1 {
-	font-family: var(--skilt);
-	text-transform: uppercase;
-	font-size: 1.25rem;
-	letter-spacing: -0.01em;
-	margin: 0;
-}
-.nokkeltall { display: flex; flex-wrap: wrap; gap: .5rem .9rem; margin: 0; padding: 0; list-style: none; }
+.admin-topp h1 { margin-bottom: .75rem; font-size: 2.75rem; }
+
+.nokkeltall { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0; padding: 0; list-style: none; }
 .nokkeltall li {
-	font-family: var(--mono);
-	font-size: .6875rem;
-	letter-spacing: .1em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
+  padding: .45rem .875rem;
+  border: 1px solid var(--linje);
+  border-radius: var(--pille);
+  background: var(--papir);
+  font-size: .95rem;
 }
-.nokkeltall .solgt { color: var(--gul); font-weight: 700; }
-.admin-topp .hoyre { margin-left: auto; display: flex; gap: .5rem; }
+.nokkeltall .solgt { background: var(--tomat); border-color: transparent; color: var(--papir); font-weight: 600; }
 
-button.knapp, .knapp {
-	font-family: var(--mono);
-	font-size: .6875rem;
-	letter-spacing: .08em;
-	text-transform: uppercase;
-	padding: .6rem .8rem;
-	min-height: 2.75rem;
-	color: var(--paa-sot);
-	background: var(--sot-hev);
-	border: 1px solid var(--sot-kant);
-	border-radius: var(--tape-radius);
-	cursor: pointer;
-	text-decoration: none;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
+.admin-topp .hoyre { display: flex; gap: .625rem; }
+
+.printfeil {
+  margin-top: 1.4rem;
+  background: var(--mork);
+  border-color: transparent;
+  color: var(--papir);
 }
-button.knapp:hover, .knapp:hover { border-color: var(--paa-sot-svak); }
-button.knapp.primar { background: var(--gul); color: #14100c; border-color: var(--gul); font-weight: 700; }
-button.knapp.primar:hover { background: #f2c93b; }
-button.knapp.fare { color: var(--feil); border-color: rgba(226,87,76,.4); }
+.printfeil h2 { margin-bottom: .875rem; font-size: 1.4rem; font-variation-settings: "opsz" 36; }
+.printfeil ul { margin: 0; padding: 0; list-style: none; }
+.printfeil li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .875rem;
+  padding: .5rem 0;
+}
+.printfeil .knapp { border-color: var(--linje-lys); background: transparent; color: var(--papir); }
+.printfeil .knapp:hover { background: rgba(240, 228, 204, .14); border-color: var(--linje-lys); color: var(--papir); }
 
-form.inline { display: inline; }
+.allergen-sjekkliste { margin-top: .75rem; border: 1px dashed rgba(184, 134, 63, .7); }
+.allergen-sjekkliste summary { cursor: pointer; font-weight: 600; }
+.allergen-sjekkliste ul { margin: .875rem 0 0; padding-left: 1.15rem; }
+.allergen-sjekkliste li { margin-bottom: .5rem; }
 
-/* Ordrekort — mobil. Dette er standardvisningen; tabellen er for store
- * skjermer. Kjokkenmobilen skal aldri scrolle sidelengs. */
-.ordreliste { list-style: none; padding: 0; margin: 0; display: grid; gap: .7rem; }
+/* Mobil: kort. Kjøkkenmobilen skal aldri scrolle sidelengs. */
+.ordreliste {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: 1rem;
+  margin: 1.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
 
 .ordrekort {
-	display: grid;
-	grid-template-columns: 3.5rem 1fr;
-	gap: .25rem .9rem;
-	padding: .9rem 1rem;
-	background: var(--sot-hev);
-	border: var(--strek);
-	border-left: 3px solid var(--sot-kant);
-	border-radius: var(--tape-radius);
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  padding: 1.15rem 1.25rem;
+  border: 1px solid var(--linje);
+  border-radius: var(--rund);
+  background: var(--papir);
 }
-.ordrekort[data-status="i_produksjon"] { border-left-color: var(--vent); }
-.ordrekort[data-status="klar"] { border-left-color: var(--klar); }
-.ordrekort[data-status="levert"] { opacity: .45; }
-.ordrekort[data-status="avbrutt"], .ordrekort[data-status="forlatt"] { opacity: .45; }
-.ordrekort.gammel { border-left-color: var(--feil); background: #2a1c16; }
+.ordrekort.gammel { border-color: rgba(198, 58, 42, .55); }
+.ordrekort .nr { font-family: var(--mono); font-weight: 700; font-size: 2.5rem; line-height: 1; }
+.ordrekort .navn { font-family: var(--skilt); font-variation-settings: "opsz" 36; font-size: 1.375rem; }
+.ordrekort .varer { font-size: 1rem; line-height: 1.5; }
+.ordrekort .kode { font-size: .85rem; }
 
-.ordrekort .nr {
-	grid-row: span 2;
-	font-size: 2rem;
-	font-weight: 700;
-	line-height: 1;
-	color: var(--paa-sot);
-	align-self: start;
+.ordrekort .meta { display: flex; flex-wrap: wrap; gap: .5rem; font-size: .875rem; }
+.ordrekort .meta > span {
+  padding: .3rem .7rem;
+  border: 1px solid var(--linje);
+  border-radius: var(--pille);
+  background: var(--kvittering);
 }
-.ordrekort .navn { font-weight: 700; font-size: 1rem; }
-.ordrekort .varer { font-size: .875rem; color: var(--paa-sot-svak); }
-.ordrekort .varer .kode { color: var(--gul); font-weight: 700; }
+.ordrekort .betalt-nei { border-color: rgba(198, 58, 42, .5); color: var(--tomat); }
+.ordrekort .etikett-feil { background: var(--mork); border-color: transparent; color: var(--papir); }
+.ordrekort .gammel-merke { background: var(--tomat); border-color: transparent; color: var(--papir); }
 
-.ordrekort .meta {
-	grid-column: 1 / -1;
-	display: flex;
-	flex-wrap: wrap;
-	gap: .35rem .8rem;
-	margin-top: .5rem;
-	padding-top: .55rem;
-	border-top: var(--strek);
-	font-family: var(--mono);
-	font-size: .625rem;
-	letter-spacing: .08em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
+/* Statusfargen sitter på kortet, ikke på hver brikke: én kilde til sannhet. */
+.ordrekort[data-status="ny"] .meta > span:first-child { background: var(--kvittering); }
+.ordrekort[data-status="i_produksjon"] .meta > span:first-child { background: var(--korn); border-color: transparent; }
+.ordrekort[data-status="klar"] .meta > span:first-child { background: var(--basilikum); border-color: transparent; color: var(--papir); }
+.ordrekort[data-status="levert"] .meta > span:first-child { background: var(--blekk-svak); border-color: transparent; color: var(--kvittering); }
+
+.handling {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding-top: .875rem;
+  border-top: 1px solid var(--linje);
 }
-.ordrekort .meta .betalt-ja { color: var(--klar); font-weight: 700; }
-.ordrekort .meta .betalt-nei { color: var(--feil); }
-.ordrekort .meta .etikett-feil { color: var(--feil); font-weight: 700; }
-.ordrekort .meta .alder { color: var(--feil); font-weight: 700; }
+.handling form { display: contents; }
+.handling .knapp { flex: 1 1 8rem; }
+/* Den anbefalte overgangen tar hele bredden — den skal treffes uten å se. */
+.handling .knapp.primar { flex: 1 1 100%; }
 
-.ordrekort .handling {
-	grid-column: 1 / -1;
-	display: flex;
-	flex-wrap: wrap;
-	gap: .4rem;
-	margin-top: .6rem;
-}
-
-.ingen {
-	font-family: var(--mono);
-	font-size: .8125rem;
-	letter-spacing: .08em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	padding: 2.5rem 0;
-	text-align: center;
-}
-
-/* Styringspanelet */
-.styring {
-	display: grid;
-	gap: .8rem;
-	grid-template-columns: 1fr;
-	margin-top: 2.5rem;
-	padding-top: 1.5rem;
-	border-top: var(--strek);
-}
-.styringsboks {
-	padding: 1rem;
-	background: var(--sot-hev);
-	border: var(--strek);
-	border-radius: var(--tape-radius);
-}
-.styringsboks h3 {
-	font-family: var(--mono);
-	font-size: .625rem;
-	letter-spacing: .14em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	font-weight: 400;
-	margin: 0 0 .7rem;
-}
-.styringsboks.farlig { border-color: rgba(226,87,76,.35); }
-.styringsboks.farlig h3 { color: var(--feil); }
-.styringsboks label { display: block; margin-bottom: .6rem; }
-.styringsboks label .navn-paa-felt {
-	display: block;
-	font-family: var(--mono);
-	font-size: .625rem;
-	letter-spacing: .1em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	margin-bottom: .3rem;
-}
-.styringsboks small { display: block; margin-top: .5rem; font-size: .75rem; color: var(--paa-sot-svak); line-height: 1.5; }
-.styringsboks .naa { font-family: var(--mono); font-size: .8125rem; margin: 0 0 .7rem; }
-
-/* Mottakervelger: en liste man peker pa, ikke et felt man skriver i. Ingen
- * skal taste attensifrede nummer mens det staar folk i kassa. */
-.mottakerliste { list-style: none; padding: 0; margin: 0 0 .8rem; display: grid; gap: .3rem; }
-.mottaker {
-	display: flex;
-	align-items: center;
-	gap: .6rem;
-	padding: .55rem .7rem;
-	border: 1px solid var(--sot-kant);
-	border-radius: var(--tape-radius);
-	cursor: pointer;
-	margin: 0;
-}
-.mottaker:hover { border-color: var(--paa-sot-svak); }
-.mottaker.valgt { border-color: var(--gul); background: rgba(232,190,42,.08); }
-.mottaker input { accent-color: var(--gul); width: 1.1rem; height: 1.1rem; flex: none; }
-.mottaker .m-navn { font-weight: 600; font-size: .9375rem; }
-.mottaker .m-nummer { margin-left: auto; font-size: .75rem; color: var(--paa-sot-svak); }
-
-.legg-til-mottaker { margin: .8rem 0 0; }
-.legg-til-mottaker summary {
-	cursor: pointer;
-	font-family: var(--mono);
-	font-size: .625rem;
-	letter-spacing: .1em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-}
-.legg-til-mottaker form { margin-top: .7rem; }
-
-.epost-svar {
-	font-family: var(--mono);
-	font-size: .6875rem;
-	line-height: 1.6;
-	margin: 0 0 .7rem;
-	padding: .5rem .6rem;
-	border-radius: var(--tape-radius);
-	word-break: break-word;
-}
-.epost-svar.ok { color: var(--klar); background: rgba(138,184,115,.1); }
-.epost-svar.feil { color: var(--feil); background: rgba(226,87,76,.1); }
-
-.utsolgtliste { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
-.utsolgtliste li { display: flex; align-items: center; justify-content: space-between; gap: .6rem; font-size: .9375rem; }
-
-#printerstatus { font-family: var(--mono); font-size: .8125rem; margin: 0 0 .4rem; }
-#printerstatus.ok { color: var(--klar); }
-#printerstatus.feil { color: var(--feil); font-weight: 700; }
-#printerstatus.laast { color: var(--feil); font-weight: 700; }
-.ko { font-family: var(--mono); font-size: .6875rem; color: var(--paa-sot-svak); margin: 0; letter-spacing: .06em; }
-
-/* Sjekkliste for uverifiserte ingredienser */
-.allergen-sjekkliste { border-left-color: var(--vent); }
-.allergen-sjekkliste summary { cursor: pointer; font-weight: 700; }
-.allergen-sjekkliste ul { margin: .7rem 0 0; padding-left: 1.1rem; }
-.allergen-sjekkliste li { margin-bottom: .5rem; line-height: 1.5; }
-
-.printfeil { border-left-color: var(--feil); }
-.printfeil h2 {
-	font-family: var(--mono);
-	font-size: .75rem;
-	letter-spacing: .1em;
-	text-transform: uppercase;
-	margin: 0 0 .6rem;
-	color: var(--feil);
-}
-.printfeil ul { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
-.printfeil li { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; line-height: 1.5; }
-
-/* Innlogging */
-.logg-inn { max-width: 22rem; padding-top: 5rem; }
-.logg-inn h1 { font-family: var(--skilt); text-transform: uppercase; font-size: 1.75rem; margin: 0 0 1.5rem; }
-
-/* Tabellen erstatter kortene pa store skjermer. */
 .ordretabell { display: none; }
 
-/* ── Henteskjerm ────────────────────────────────────────────────────────── */
-/*
- * Star vendt mot rommet. Kun numre — navn hoerer pa etiketten og i admin,
- * ikke pa en skjerm full av fremmede.
- *
- * To spalter, med vilje ulikt vektet: «Klar» er det folk skanner etter fra
- * andre siden av rommet, sa den far plassen og tapelappene. «Under arbeid»
- * er beroligende informasjon — nummeret ditt er inne — ikke handling, sa den
- * er dempet og mindre.
- */
+.ingen { margin-top: 2rem; text-align: center; font-family: var(--skilt); font-style: italic; font-size: 1.25rem; color: var(--blekk-mild); }
 
-body.skjerm { background: var(--sot); }
+.styring-tittel { margin: 2.75rem 0 1.15rem; font-size: 2.125rem; }
+
+/* Spalter, ikke rutenett: boksene er ulikt hoye, og et rutenett ville latt
+   den hoyeste dra en tom luke etter seg i hele raden. */
+.styring { columns: 17rem; column-gap: 1rem; }
+
+.styringsboks {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  padding: 1.25rem;
+  border: 1px solid var(--linje);
+  border-radius: var(--rund);
+  background: var(--papir-varm);
+}
+.styringsboks h3 {
+  margin: 0;
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 36;
+  font-size: 1.375rem;
+  color: var(--tomat);
+}
+.styringsboks .naa { margin: 0; font-size: 1.1rem; }
+.styringsboks .ko { margin: 0; font-family: var(--mono); font-size: .875rem; color: var(--blekk-mild); }
+.styringsboks label { margin: 0; }
+.styringsboks input[type="text"],
+.styringsboks input[type="email"] { height: 52px; font-size: 1.05rem; }
+.styringsboks .knapp { width: 100%; }
+
+.utsolgtliste, .mottakerliste { display: flex; flex-direction: column; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.utsolgtliste li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; font-size: 1rem; }
+.utsolgtliste .knapp { width: auto; min-height: 42px; }
+
+.mottaker {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .8rem 1rem;
+  border: 1px solid var(--linje);
+  border-radius: var(--rund-liten);
+  background: var(--kvittering);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.mottaker:hover { border-color: var(--tomat); }
+.mottaker input { width: 22px; height: 22px; flex: 0 0 22px; accent-color: var(--tomat); }
+.mottaker .m-navn { flex: 1; }
+.mottaker .m-nummer { font-family: var(--mono); font-size: .875rem; }
+.mottaker.valgt { background: var(--tomat); border-color: transparent; color: var(--papir); }
+.mottaker.valgt input { accent-color: var(--papir); }
+
+.legg-til-mottaker summary { cursor: pointer; font-size: .95rem; color: var(--blekk-mild); }
+.legg-til-mottaker label { margin-top: .625rem; }
+
+#printerstatus { margin: 0; display: flex; align-items: center; gap: .625rem; font-size: 1.1rem; }
+#printerstatus::before { content: ""; width: 12px; height: 12px; flex: 0 0 12px; border-radius: 50%; background: var(--blekk-svak); }
+#printerstatus.ok::before { background: var(--basilikum); }
+#printerstatus.feil::before { background: var(--honning); }
+#printerstatus.laast::before { background: var(--tomat); }
+
+.epost-svar { margin: 0; padding: .7rem .875rem; border-radius: var(--rund-liten); font-size: .95rem; line-height: 1.45; }
+.epost-svar.ok { background: var(--basilikum); color: var(--papir); }
+.epost-svar.feil { background: var(--tomat); color: var(--papir); }
+
+.styringsboks.farlig { background: var(--mork); border-color: transparent; color: var(--papir); }
+.styringsboks.farlig h3 { color: var(--korn); }
+.styringsboks.farlig .navn-paa-felt { color: var(--papir); }
+.styringsboks.farlig input { border-color: var(--linje-lys); background: rgba(240, 228, 204, .08); color: var(--papir); }
+.styringsboks.farlig input:focus { border-color: var(--korn); box-shadow: 0 0 0 3px rgba(232, 190, 122, .2); }
+.styringsboks.farlig small { color: rgba(240, 228, 204, .75); }
+.styringsboks.farlig .knapp.fare { background: transparent; color: var(--papir); }
+.styringsboks.farlig .knapp.fare:hover { background: var(--tomat); }
+
+/* PC: tabell. Flere ordrer i syne samtidig. */
+@media (min-width: 60rem) {
+  .ordreliste { display: none; }
+
+  .ordretabell { display: table; width: 100%; margin-top: 1.6rem; border-collapse: collapse; }
+  .ordretabell th {
+    padding: .625rem .75rem;
+    border-bottom: 1px solid var(--linje);
+    text-align: left;
+    font-family: var(--skilt);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1rem;
+    color: var(--tomat);
+  }
+  .ordretabell td { padding: .875rem .75rem; border-bottom: 1px solid var(--linje); vertical-align: top; }
+  .ordretabell .nr { font-family: var(--mono); font-weight: 700; font-size: 1.75rem; line-height: 1; }
+  .ordretabell .navn { font-family: var(--skilt); font-variation-settings: "opsz" 24; font-size: 1.15rem; }
+  .ordretabell .sum { display: block; margin-top: .25rem; font-size: .875rem; color: var(--blekk-mild); }
+  .ordretabell .kode { font-size: .8rem; }
+  .ordretabell .gammel-merke {
+    display: inline-block;
+    margin-top: .3rem;
+    padding: .2rem .6rem;
+    border-radius: var(--pille);
+    background: var(--tomat);
+    color: var(--papir);
+    font-size: .8rem;
+  }
+  .ordretabell .status-merke {
+    display: inline-block;
+    padding: .25rem .7rem;
+    border-radius: var(--pille);
+    background: var(--kvittering);
+    border: 1px solid var(--linje);
+    font-size: .9rem;
+  }
+  .ordretabell tr[data-status="i_produksjon"] .status-merke { background: var(--korn); border-color: transparent; }
+  .ordretabell tr[data-status="klar"] .status-merke { background: var(--basilikum); border-color: transparent; color: var(--papir); }
+  .ordretabell tr[data-status="levert"] .status-merke { background: var(--blekk-svak); border-color: transparent; color: var(--kvittering); }
+
+  .ordretabell .etikett-feil { display: block; margin-top: .25rem; color: var(--tomat); font-size: .85rem; }
+  .ordretabell .ordre.gammel { background: rgba(198, 58, 42, .07); }
+  .ordretabell .handling { padding-top: 0; border-top: none; }
+  .ordretabell .handling .knapp { flex: 0 0 auto; min-height: 40px; padding: .45rem .875rem; font-size: .875rem; }
+  .ordretabell .handling .knapp.primar { flex: 0 0 auto; min-height: 40px; font-size: 1rem; }
+}
+
+/* ── Tavla ────────────────────────────────────────────────────────────── */
+
+body.skjerm { background: var(--mork); color: var(--papir); }
 
 .skjerm-side {
-	min-height: 100svh;
-	display: grid;
-	grid-template-rows: 1fr auto;
-	gap: clamp(1rem, 2.5vh, 2rem);
-	padding: clamp(1.25rem, 3vw, 2.5rem);
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: 2.5rem;
+  min-height: 100vh;
+  padding: 2.5rem 2rem;
 }
 
-.spalte { display: flex; flex-direction: column; min-height: 0; }
+.spalte h2 { font-family: var(--skilt); font-style: italic; font-weight: 400; }
 
-.spalte h2 {
-	font-family: var(--mono);
-	letter-spacing: .28em;
-	text-transform: uppercase;
-	font-weight: 400;
-	margin: 0 0 clamp(.75rem, 2vh, 1.5rem);
-	padding-bottom: .8rem;
-	border-bottom: var(--strek);
+.spalte-klar h2 {
+  margin-bottom: 1.25rem;
+  font-size: clamp(2.125rem, 5vw, 3.25rem);
+  font-variation-settings: "opsz" 96, "SOFT" 100;
+  color: var(--korn);
 }
-.spalte-klar h2 { font-size: clamp(.75rem, 1.4vw, 1.05rem); color: var(--paa-sot); }
-.spalte-arbeid h2 { font-size: clamp(.625rem, 1vw, .8125rem); color: var(--paa-sot-svak); }
 
-/* Klare numre er tapelapper. Samme signatur som resten av systemet. */
-.numre {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-	flex: 1;
-	display: flex;
-	flex-wrap: wrap;
-	align-content: flex-start;
-	gap: clamp(.6rem, 1.5vw, 1.25rem);
-}
+.numre { display: flex; flex-wrap: wrap; gap: 1.25rem; margin: 0; padding: 0; list-style: none; }
 .numre li {
-	font-family: var(--mono);
-	font-weight: 700;
-	font-size: clamp(3.5rem, 11vw, 9rem);
-	line-height: 1;
-	letter-spacing: -0.04em;
-	background: var(--tape);
-	color: var(--tape-tekst);
-	border-radius: var(--tape-radius);
-	padding: .12em .22em .16em;
-	animation: mates-ut .45s cubic-bezier(.2,.8,.2,1) both;
+  padding: .625rem 1.6rem;
+  border-radius: 8px;
+  background: var(--papir);
+  color: var(--blekk);
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: clamp(4.5rem, 14vw, 9.375rem);
+  line-height: 1;
+  animation: mates-ut .45s ease-out;
 }
 
-/* Tapen mates ut fra venstre, som pa en ekte labelmaker. */
 @keyframes mates-ut {
-	from { clip-path: inset(0 100% 0 0); transform: translateX(-.35em); }
-	to   { clip-path: inset(0 0 0 0);   transform: none; }
+  from { opacity: 0; transform: translateY(-14px) scale(.94); }
+  to { opacity: 1; transform: none; }
 }
 
-/* Under arbeid: ren tekst, ingen tape. Skillet i form sier at disse ikke
- * skal hentes ennaa — man trenger ikke lese teksten for a se det. */
+.spalte-arbeid { border-top: 1px solid rgba(240, 228, 204, .2); padding-top: 2rem; }
+.spalte-arbeid h2 {
+  margin-bottom: 1rem;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-variation-settings: "opsz" 48;
+  color: var(--papir);
+  opacity: .8;
+}
+
+/* Dempet, men fortsatt lesbar fra andre siden av rommet — dette er tallene
+   folk leter etter mens de venter. */
 .numre-sma {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-	display: flex;
-	flex-wrap: wrap;
-	gap: clamp(.4rem, 1.2vw, 1rem) clamp(.8rem, 2vw, 1.75rem);
-}
-.numre-sma li {
-	font-family: var(--mono);
-	font-weight: 700;
-	font-size: clamp(1.75rem, 4.5vw, 3.25rem);
-	line-height: 1;
-	letter-spacing: -0.02em;
-	color: var(--paa-sot-svak);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: clamp(2.75rem, 6vw, 4.25rem);
+  line-height: 1;
+  color: var(--korn);
+  opacity: .85;
 }
 
-.skjerm-side .tom {
-	font-family: var(--mono);
-	font-size: clamp(1rem, 2.5vw, 1.5rem);
-	letter-spacing: .16em;
-	text-transform: uppercase;
-	color: var(--paa-sot-svak);
-	margin: auto auto auto 0;
-}
-.skjerm-side .tom-liten {
-	font-family: var(--mono);
-	font-size: clamp(1.25rem, 3vw, 2rem);
-	color: var(--sot-kant);
-	margin: 0;
+.tom { margin: 0; font-family: var(--skilt); font-style: italic; font-size: clamp(1.75rem, 4vw, 2.5rem); opacity: .55; }
+.tom-liten { margin: 0; font-family: var(--mono); font-size: 2rem; opacity: .4; }
+
+/* Landskap på TV: klar-spalten får plassen den fortjener. */
+@media (min-width: 60rem) and (orientation: landscape) {
+  .skjerm-side { grid-template-columns: 2fr 1fr; gap: 3rem; align-content: center; }
+  .spalte-arbeid { border-top: none; border-left: 1px solid rgba(240, 228, 204, .2); padding-top: 0; padding-left: 3rem; }
+  .numre-sma { flex-direction: column; gap: .875rem; }
 }
 
-/* ── Store skjermer ─────────────────────────────────────────────────────── */
+/* ── Innlogging, 404 ──────────────────────────────────────────────────── */
 
-@media (min-width: 34rem) {
-	.side { padding-inline: 1.5rem; }
-	.menyrett { grid-template-columns: 3.25rem 1fr; }
-	.menyrett .kode { font-size: 2.35rem; }
-	.styring { grid-template-columns: repeat(2, 1fr); }
-}
+.logg-inn { max-width: 26rem; padding-top: 5rem; }
+.logg-inn h1 { margin-bottom: .5rem; font-size: 3.25rem; }
+.logg-inn .stemme { display: block; margin-bottom: 1.9rem; font-size: 1.1rem; }
+.logg-inn label { margin-bottom: 1rem; }
+.logg-inn .bestill-knapp { min-height: 64px; font-size: 1.375rem; }
+.logg-inn small { margin-top: .875rem; }
 
-/* Landskap pa en TV: spaltene side ved side, klar-spalten dobbelt sa bred. */
-@media (min-width: 52rem) and (orientation: landscape) {
-	.skjerm-side {
-		grid-template-rows: 1fr;
-		grid-template-columns: 2fr 1fr;
-		gap: clamp(1.5rem, 3vw, 3rem);
-	}
-	.spalte-arbeid {
-		border-left: var(--strek);
-		padding-left: clamp(1.25rem, 2.5vw, 2.5rem);
-	}
-	.numre-sma { align-content: flex-start; }
-}
+.ikke-funnet { max-width: 29rem; padding-top: 5.5rem; text-align: center; }
+.ikke-funnet h1 { margin-bottom: 1rem; font-size: clamp(2.375rem, 10vw, 3.625rem); line-height: 1.02; }
+.ikke-funnet h1 em { font-style: italic; color: var(--tomat); }
+.ikke-funnet p { margin: 0 0 2rem; font-size: 1.15rem; line-height: 1.5; color: var(--blekk-mild); }
+.ikke-funnet .knapp.primar { padding: 1.15rem 2.15rem; font-size: 1.3rem; }
 
-@media (min-width: 60rem) {
-	.side.admin { padding-block: 0 5rem; }
-	.styring { grid-template-columns: repeat(4, 1fr); }
-
-	/* Pa PC er tabellen bedre enn kort: flere ordrer i syne samtidig. */
-	.ordreliste { display: none; }
-	.ordretabell { display: table; width: 100%; border-collapse: collapse; }
-	.ordretabell th, .ordretabell td {
-		text-align: left;
-		padding: .7rem .6rem;
-		border-bottom: var(--strek);
-		vertical-align: top;
-	}
-	.ordretabell thead th {
-		font-family: var(--mono);
-		font-size: .5625rem;
-		letter-spacing: .14em;
-		text-transform: uppercase;
-		color: var(--paa-sot-svak);
-		font-weight: 400;
-		border-bottom-color: var(--paa-sot-svak);
-	}
-	.ordretabell tr.ordre { border-left: 3px solid transparent; }
-	.ordretabell tr.ordre td:first-child { border-left: 3px solid var(--sot-kant); padding-left: .8rem; }
-	.ordretabell tr[data-status="i_produksjon"] td:first-child { border-left-color: var(--vent); }
-	.ordretabell tr[data-status="klar"] td:first-child { border-left-color: var(--klar); }
-	.ordretabell tr[data-status="levert"] { opacity: .45; }
-	.ordretabell tr[data-status="avbrutt"], .ordretabell tr[data-status="forlatt"] { opacity: .45; }
-	.ordretabell tr.gammel td:first-child { border-left-color: var(--feil); }
-	.ordretabell tr.gammel { background: #2a1c16; }
-	.ordretabell .nr { font-size: 1.5rem; font-weight: 700; }
-	.ordretabell .varer { font-size: .875rem; color: var(--paa-sot-svak); }
-	.ordretabell .varer .kode { color: var(--gul); font-weight: 700; }
-	.ordretabell .sum { display: block; font-family: var(--mono); font-size: .6875rem; color: var(--paa-sot-svak); }
-	.ordretabell .status-celle {
-		font-family: var(--mono);
-		font-size: .6875rem;
-		letter-spacing: .06em;
-		text-transform: uppercase;
-	}
-	.ordretabell .gammel-merke { display: block; color: var(--feil); font-weight: 700; margin-top: .2rem; }
-	.ordretabell .handling { display: flex; flex-wrap: wrap; gap: .3rem; }
-	.ordretabell .etiketter { font-family: var(--mono); font-size: .6875rem; }
-}
-
-/* ── Redusert bevegelse ─────────────────────────────────────────────────── */
+/* ── Redusert bevegelse ───────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-	*, *::before, *::after {
-		animation-duration: .01ms !important;
-		animation-iteration-count: 1 !important;
-		transition-duration: .01ms !important;
-	}
-	.numre li { animation: none; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }

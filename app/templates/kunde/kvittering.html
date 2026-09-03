@@ -2,18 +2,18 @@
 {% block tittel %}Nummer {{ ordre.dagsnummer }} – {{ innst.stedsnavn }}{% endblock %}
 
 {% block innhold %}
-<main class="side kvittering">
+<main class="side kvittering-side">
 
-  <p class="takk">Takk, {{ ordre.kundenavn.split()[0] }} — bestillingen er inne</p>
+  <p class="takk">Takk, {{ ordre.kundenavn.split()[0] }} — bestillingen er inne.</p>
 
   {# Faksimile av den fysiske etiketten som havner på esken din. Samme kode,
      samme nummer, samme skrift som tapen kokken leser. #}
-  <div class="tape etikett-faksimile">
+  <div class="etikett-faksimile">
     <span class="hovedkode">{{ linjer[0].etikett_snapshot[:1] | upper }}{{ ordre.dagsnummer }}</span>
     <span class="bi">
       <b>{{ ordre.kundenavn.split()[0] }}</b>
       {% set antall = linjer | sum(attribute="antall") %}
-      {{ antall }} {% if antall == 1 %}pizza{% else %}pizzaer{% endif %}
+      · {{ antall }} {% if antall == 1 %}pizza{% else %}pizzaer{% endif %}
     </span>
   </div>
   <p class="etikett-under">Slik ser etiketten på esken din ut</p>
@@ -39,8 +39,7 @@
     </p>
 
     <p class="vipps-nummer-linje">
-      Eller søk opp
-      <span class="mono" id="vipps-nummer">{{ innst.vipps_nummer }}</span>
+      <span>Eller søk opp <span class="mono" id="vipps-nummer">{{ innst.vipps_nummer }}</span></span>
       <button type="button" class="knapp liten" id="kopier-vipps"
               data-nummer="{{ innst.vipps_nummer }}">Kopier</button>
     </p>
@@ -107,7 +106,7 @@ kopier.addEventListener("click", async () => {
     utvalg.addRange(rekke);
     kopier.textContent = "Merket — kopier selv";
   }
-  setTimeout(() => { kopier.textContent = "Kopier nummeret"; }, 2500);
+  setTimeout(() => { kopier.textContent = "Kopier"; }, 2500);
 });
 </script>
 {% endblock %}

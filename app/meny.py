@@ -7,6 +7,28 @@ import sqlite3
 from . import allergener
 from .db import naa, transaksjon
 
+# Kallenavn er ren pynt pa kundesida. De ligger her og ikke i basen med vilje:
+# navn og etikettnavn styrer kodebokstaven og bytene som gaar til printeren, og
+# de skal ikke kunne roeres av en tulletekst. Vil du bytte et kallenavn, bytt
+# det her - ingenting annet henger etter.
+KALLENAVN: dict[str, str] = {
+    "margherita": "Marcus og Margherita",
+    "skinke": "Don Skinkone",
+    "paere": "Pæreoni & Pérignon",
+}
+
+
+def _undertittel(navn: str, beskrivelse: str) -> str:
+    """«Margherita — tomatsaus og revet ost.»
+
+    Det ekte navnet foerst, saa beskrivelsen med liten forbokstav. Naar
+    overskriften er et kallenavn, er det denne linja som forteller kunden hva
+    de faktisk bestiller.
+    """
+    if not beskrivelse:
+        return navn
+    return f"{navn} — {beskrivelse[:1].lower()}{beskrivelse[1:]}"
+
 
 def full_meny(kob: sqlite3.Connection, bare_tilgjengelige: bool = False) -> list[dict]:
     """Menyen med utledede allergener per rett.
@@ -42,6 +64,8 @@ def full_meny(kob: sqlite3.Connection, bare_tilgjengelige: bool = False) -> list
                 "etikettnavn": rad["etikettnavn"],
                 "kode": rad["etikettnavn"][:1].upper(),
                 "beskrivelse": rad["beskrivelse"],
+                "kallenavn": KALLENAVN.get(rad["slug"], rad["navn"]),
+                "undertittel": _undertittel(rad["navn"], rad["beskrivelse"]),
                 "pris_ore": rad["pris_ore"],
                 "pris_kr": rad["pris_ore"] // 100,
                 "tilgjengelig": bool(rad["tilgjengelig"]),

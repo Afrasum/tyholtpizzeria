@@ -1,7 +1,9 @@
 {% extends "base.html" %}
+{% block tittel %}Fant ikke bestillingen{% endblock %}
 {% block innhold %}
-<main class="side">
-  <h1 class="skilt" style="font-size:2rem">Fant ikke bestillingen</h1>
-  <p>Sjekk lenken, eller <a href="/">gå til menyen</a>.</p>
+<main class="side ikke-funnet">
+  <h1>Fant ikke <em>bestillingen</em></h1>
+  <p>Sjekk lenken — eller gå tilbake til menyen og bestill på nytt.</p>
+  <a class="knapp primar" href="/">Gå til menyen</a>
 </main>
 {% endblock %}

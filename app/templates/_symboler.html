@@ -1,0 +1,88 @@
+{# Ett SVG-sprite, inkludert én gang per side. Alt tegnes i markup framfor å
+   lastes som bilder: ingen ekstra forespørsler, skalerer fritt, og fargene
+   arver paletten. Illustrasjonene slås opp på slug, så en ny pizza uten
+   tegning bare får den nøytrale bunnen. #}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+
+    {# ---- Allergenikoner. Bare de kategoriene menyen faktisk bruker har en
+           tegning; resten faller tilbake til ren tekst i malen. ---- #}
+    <symbol id="al-gluten" viewBox="0 0 32 32">
+      <line x1="16" y1="4" x2="16" y2="28" stroke="#B8863F" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M16,9 Q10,7 7,11 Q11,12 16,13 Q21,12 25,11 Q22,7 16,9 Z" fill="#D9AE5C" stroke="#8B6320" stroke-width=".8" stroke-linejoin="round"/>
+      <path d="M16,14 Q10,12 7,16 Q11,17 16,18 Q21,17 25,16 Q22,12 16,14 Z" fill="#D9AE5C" stroke="#8B6320" stroke-width=".8" stroke-linejoin="round"/>
+      <path d="M16,19 Q10,17 7,21 Q11,22 16,23 Q21,22 25,21 Q22,17 16,19 Z" fill="#D9AE5C" stroke="#8B6320" stroke-width=".8" stroke-linejoin="round"/>
+    </symbol>
+
+    <symbol id="al-melk" viewBox="0 0 32 32">
+      <path d="M16,4 Q10,14 9,20 Q9,26 16,26 Q23,26 23,20 Q22,14 16,4 Z" fill="#FBF3DC" stroke="#1E140E" stroke-width="1.6" stroke-linejoin="round"/>
+      <ellipse cx="13" cy="19" rx="2.4" ry="3.4" fill="#fff" opacity=".8"/>
+    </symbol>
+
+    {# ---- Basilikumbladet som pryder prikken over i-en i ordmerket. ---- #}
+    <symbol id="basilikum" viewBox="0 0 22 30">
+      <g transform="translate(11 13) rotate(28)">
+        <path d="M0,-11 Q-7,-6 -6,3 Q-3,9 0,10 Q3,9 6,3 Q7,-6 0,-11 Z" fill="#4F6A2E" stroke="#2A3818" stroke-width=".5"/>
+        <path d="M0,-9 L0,8" stroke="#2A3818" stroke-width=".6" opacity=".6"/>
+        <path d="M0,10 L0,15" stroke="#2A3818" stroke-width=".9" stroke-linecap="round"/>
+      </g>
+    </symbol>
+
+    {# ---- Pizzaene. Felles bunn, så én gruppe topping per rett. ---- #}
+    <symbol id="pizza-bunn" viewBox="0 0 500 500">
+      <circle cx="250" cy="250" r="205" fill="#E8D3A8" stroke="#B8955E" stroke-width="4"/>
+    </symbol>
+
+    <symbol id="pizza-margherita" viewBox="0 0 500 500">
+      <circle cx="250" cy="250" r="205" fill="#E8D3A8" stroke="#B8955E" stroke-width="4"/>
+      <circle cx="250" cy="250" r="180" fill="#C63A2A"/>
+      <ellipse cx="250" cy="250" rx="30" ry="28" fill="#FBF3DC"/>
+      <ellipse cx="175" cy="180" rx="36" ry="32" fill="#FBF3DC"/>
+      <ellipse cx="325" cy="180" rx="34" ry="30" fill="#FBF3DC"/>
+      <ellipse cx="145" cy="275" rx="36" ry="33" fill="#FBF3DC"/>
+      <ellipse cx="355" cy="275" rx="35" ry="32" fill="#FBF3DC"/>
+      <ellipse cx="190" cy="355" rx="36" ry="32" fill="#FBF3DC"/>
+      <ellipse cx="315" cy="355" rx="34" ry="30" fill="#FBF3DC"/>
+      <ellipse cx="250" cy="145" rx="28" ry="25" fill="#FBF3DC"/>
+      <ellipse cx="250" cy="375" rx="26" ry="24" fill="#FBF3DC"/>
+      <path d="M220 220 Q205 200,227 195 Q245 210,230 232 Z" fill="#4F6A2E"/>
+      <path d="M295 235 Q280 215,302 210 Q320 225,305 247 Z" fill="#4F6A2E"/>
+      <path d="M230 315 Q213 297,236 291 Q254 305,240 327 Z" fill="#4F6A2E"/>
+      <path d="M305 320 Q290 302,312 296 Q330 310,315 332 Z" fill="#4F6A2E"/>
+      <path d="M168 235 Q153 215,175 210 Q193 225,178 247 Z" fill="#4F6A2E"/>
+      <path d="M175 330 Q160 310,182 305 Q200 320,185 342 Z" fill="#4F6A2E"/>
+      <path d="M275 165 Q260 145,282 140 Q300 155,285 177 Z" fill="#4F6A2E"/>
+      <path d="M340 315 Q325 295,347 290 Q365 305,350 327 Z" fill="#4F6A2E"/>
+    </symbol>
+
+    {# Skinka er tegnet i samme hånd som de to andre: uregelmessige flak lagt
+       oppå ostelaget, ikke perfekte sirkler. #}
+    <symbol id="pizza-skinke" viewBox="0 0 500 500">
+      <circle cx="250" cy="250" r="205" fill="#E8D3A8" stroke="#B8955E" stroke-width="4"/>
+      <circle cx="250" cy="250" r="180" fill="#C63A2A"/>
+      <ellipse cx="215" cy="200" rx="42" ry="36" fill="#FBF3DC" opacity=".92"/>
+      <ellipse cx="310" cy="230" rx="38" ry="33" fill="#FBF3DC" opacity=".92"/>
+      <ellipse cx="180" cy="300" rx="40" ry="35" fill="#FBF3DC" opacity=".92"/>
+      <ellipse cx="290" cy="340" rx="42" ry="34" fill="#FBF3DC" opacity=".92"/>
+      <path d="M155 165 Q205 145,240 170 Q255 205,215 225 Q170 230,150 200 Z" fill="#E8A896" stroke="#D4685C" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M300 155 Q355 165,365 205 Q350 245,305 240 Q275 215,285 180 Z" fill="#E8A896" stroke="#D4685C" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M140 285 Q190 270,210 305 Q205 350,160 355 Q120 335,130 305 Z" fill="#E8A896" stroke="#D4685C" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M285 300 Q345 290,365 325 Q355 370,305 372 Q270 350,275 320 Z" fill="#E8A896" stroke="#D4685C" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M230 250 Q275 240,290 272 Q280 305,240 305 Q210 288,215 268 Z" fill="#E8A896" stroke="#D4685C" stroke-width="3" stroke-linejoin="round"/>
+    </symbol>
+
+    <symbol id="pizza-paere" viewBox="0 0 500 500">
+      <circle cx="250" cy="250" r="205" fill="#E8D3A8" stroke="#B8955E" stroke-width="4"/>
+      <circle cx="250" cy="250" r="180" fill="#FBF3DC"/>
+      <path d="M170 175 Q150 170,150 195 Q150 220,170 225 Q190 220,195 200 Q195 180,170 175 Z" fill="#D9AE5C"/>
+      <path d="M330 165 Q310 160,310 185 Q310 210,330 215 Q350 210,355 190 Q355 170,330 165 Z" fill="#D9AE5C"/>
+      <path d="M155 275 Q135 270,135 295 Q135 320,155 325 Q175 320,180 300 Q180 280,155 275 Z" fill="#D9AE5C"/>
+      <path d="M345 275 Q325 270,325 295 Q325 320,345 325 Q365 320,370 300 Q370 280,345 275 Z" fill="#D9AE5C"/>
+      <path d="M185 355 Q165 350,165 375 Q165 395,185 400 Q205 395,210 380 Q210 360,185 355 Z" fill="#D9AE5C"/>
+      <path d="M315 355 Q295 350,295 375 Q295 395,315 400 Q335 395,340 380 Q340 360,315 355 Z" fill="#D9AE5C"/>
+      <path d="M250 235 Q230 230,230 255 Q230 280,250 285 Q270 280,275 260 Q275 240,250 235 Z" fill="#D9AE5C"/>
+      <path d="M145 195 Q210 175,265 195 Q320 210,370 190 Q385 240,350 285 Q305 315,250 305 Q200 300,175 340 Q165 380,220 400" stroke="#B8863F" stroke-width="2" fill="none" opacity=".45" stroke-dasharray="3 4"/>
+    </symbol>
+
+  </defs>
+</svg>

@@ -9,7 +9,7 @@
   {% for neste in flyt[o.status] %}
   <form method="post" action="/admin/ordre/{{ o.id }}/status" class="inline">
     <input type="hidden" name="ny" value="{{ neste }}">
-    <button type="submit" class="knapp {% if neste in ('klar','levert') %}primar{% endif %}">{{ statusnavn[neste] }}</button>
+    <button type="submit" class="knapp {% if loop.first %}primar{% endif %}">{{ statusnavn[neste] }}</button>
   </form>
   {% endfor %}
   <form method="post" action="/admin/ordre/{{ o.id }}/betalt" class="inline">
@@ -45,7 +45,7 @@
 
   {% if feilede %}
   <section class="varsel printfeil">
-    <h2>{{ feilede | length }} jobber feilet</h2>
+    <h2>{{ feilede | length }} jobb{{ "er" if feilede | length != 1 }} feilet</h2>
     <ul>
       {% for j in feilede %}
       <li>
@@ -112,7 +112,7 @@
           <span class="sum">{{ o.total_ore | kroner }} · {{ "betalt" if o.betalt else "ikke betalt" }}</span>
         </td>
         <td class="status-celle">
-          {{ statusnavn[o.status] }}
+          <span class="status-merke">{{ statusnavn[o.status] }}</span>
           {% if rad.gammel %}<span class="gammel-merke">klar i {{ rad.minutter }} min</span>{% endif %}
         </td>
         <td class="etiketter">
@@ -127,6 +127,7 @@
 
   {% if not rader %}<p class="ingen">Ingen bestillinger ennå</p>{% endif %}
 
+  <h2 class="styring-tittel">Styring</h2>
   <section class="styring">
 
     <div class="styringsboks">

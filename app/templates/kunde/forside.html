@@ -1,19 +1,27 @@
 {% extends "base.html" %}
 
+{# Slugene som har en egen tegning i _symboler.html. En ny rett uten tegning
+   faller pent tilbake til den nøytrale bunnen. #}
+{% set tegnede = ("margherita", "skinke", "paere") %}
+
 {% block innhold %}
 <main class="side kunde">
 
   <header class="topp">
-    <h1 class="navn"><span>Tyholt</span><span class="to">Pizzeria</span></h1>
+    <p class="stedet">Pop-up i festningshelga</p>
+    <h1 class="navn" aria-label="Tyholt Pizzeria">
+      <span aria-hidden="true">Tyholt</span>
+      <span class="ord-to" aria-hidden="true">Pizzer<span class="i-med-blad">ı<svg class="blad" aria-hidden="true"><use href="#basilikum"></use></svg></span>a</span>
+    </h1>
     <ul class="fakta">
       <li>4.–5. september</li>
       <li>15:00–00:00</li>
-      <li>59 kr</li>
+      <li>Alt koster 59 kr</li>
     </ul>
   </header>
 
   {% if not aapent %}
-    <p class="varsel stengt">{{ grunn }} Menyen står, men du kan ikke bestille akkurat nå.</p>
+    <p class="varsel stengt"><b>{{ grunn }}</b><br>Menyen står, men du kan ikke bestille akkurat nå.</p>
   {% endif %}
 
   {% if feil %}
@@ -24,34 +32,49 @@
 
     <section class="meny">
       <h2>Menyen</h2>
+      <p class="stemme ingress">Tre pizzaer. Trykk pluss.</p>
 
       <ul class="menyliste">
         {% for rett in meny %}
-        <li class="menyrett tape {% if not rett.tilgjengelig %}utsolgt{% endif %}">
-
-          {# Kodebokstaven er ikke pynt: det er nøyaktig den som blir printet
-             på etiketten som havner på pizzaesken din. #}
-          <span class="kode mono" aria-hidden="true">{{ rett.kode }}</span>
+        <li class="menyrett {% if not rett.tilgjengelig %}utsolgt{% endif %}">
 
           <div class="rett-hode">
-            <h3>{{ rett.navn }}</h3>
-            <span class="pris mono">{{ rett.pris_ore | kroner }}</span>
+            <div class="tegning" aria-hidden="true">
+              <svg viewBox="0 0 500 500"><use href="#pizza-{{ rett.slug if rett.slug in tegnede else 'bunn' }}"></use></svg>
+            </div>
+
+            <div class="rett-tekst">
+              <div class="tittelrad">
+                {# Kodebokstaven er ikke pynt: det er nøyaktig den som blir
+                   printet på etiketten som havner på pizzaesken din. #}
+                <span class="kode mono" aria-hidden="true">{{ rett.kode }}</span>
+                <h3>{{ rett.kallenavn }}</h3>
+              </div>
+              {# Kallenavnet er stemningen. Denne linja er avtalen: det ekte
+                 navnet først, så hva som faktisk ligger på. #}
+              <p class="undertittel">{{ rett.undertittel }}</p>
+            </div>
           </div>
 
           <p class="ingredienser">{{ rett.ingredienser | join(", ") }}</p>
 
           {% if rett.inneholder %}
           <p class="allergener">
-            <b>Inneholder</b>
-            {% for a in rett.inneholder %}{{ a.navn }}{% if not loop.last %} · {% endif %}{% endfor %}
+            <span class="merke">Inneholder</span>
+            {% for a in rett.inneholder %}
+            <span class="stoff">
+              {% if a.kode in ("gluten", "melk") %}<svg class="ikon" aria-hidden="true"><use href="#al-{{ a.kode }}"></use></svg>{% endif %}
+              {{ a.navn }}
+            </span>
+            {% endfor %}
           </p>
           {% endif %}
 
           {% if not rett.tilgjengelig %}
             <p class="utsolgt-merke">Utsolgt</p>
           {% elif aapent %}
-            <div class="antall">
-              <span class="merkelapp" id="merke-{{ rett.id }}">Antall</span>
+            <div class="antall" data-pris="{{ rett.pris_ore }}">
+              <span class="merkelapp" id="merke-{{ rett.id }}">Antall {{ rett.navn }}</span>
               <button type="button" class="trekk-fra" aria-label="Én færre {{ rett.navn }}">−</button>
               <input type="number" name="antall_{{ rett.id }}" min="0" max="{{ maks }}"
                      inputmode="numeric" aria-labelledby="merke-{{ rett.id }}"
@@ -73,19 +96,20 @@
     </section>
 
     {% if aapent %}
-    <section class="dine-opplysninger">
+    <section class="dine-opplysninger" id="deg">
       <h2>Deg</h2>
+      <p class="stemme ingress">To felt, så er du ferdig.</p>
 
       <label>
         <span class="navn-paa-felt">Navn</span>
-        <input type="text" name="kundenavn" required maxlength="60"
+        <input type="text" name="kundenavn" required maxlength="60" placeholder="Fornavn er nok"
                autocomplete="name" value="{{ forrige_navn or '' }}">
         <small>Vi roper opp nummeret og navnet ditt.</small>
       </label>
 
       <label>
         <span class="navn-paa-felt">E-post <span class="valgfritt">— valgfritt</span></span>
-        <input type="email" name="epost" maxlength="200"
+        <input type="email" name="epost" maxlength="200" placeholder="deg@example.no"
                autocomplete="email" value="{{ forrige_epost or '' }}">
         <small>Du får bestillingen på e-post, og beskjed når pizzaen er klar.</small>
       </label>
@@ -107,20 +131,62 @@
     {% endif %}
 
   </form>
+
+  <footer class="bunn">
+    <p class="slagord">Fordi vi elsker pizza &lt;3</p>
+    <div class="kontakt">
+      <a class="adresse" href="https://maps.google.com/?q=Tyholtveien+25,+7052+Trondheim">Tyholtveien 25, 7052 Trondheim</a>
+      <a href="mailto:hei@tyholtpizzeria.com">hei@tyholtpizzeria.com</a>
+    </div>
+  </footer>
 </main>
+
+{% if aapent %}
+{# Kurven er tom til du legger noe i den, og JS fyller den. Uten JS er den
+   aldri synlig — og da er sendeknappen fortsatt der den alltid var. #}
+<div class="kurv" id="kurv" hidden>
+  <div class="sum">
+    <div class="belop" id="kurv-belop">0 kr</div>
+    <div class="antall-tekst" id="kurv-antall"></div>
+  </div>
+  <a class="videre" href="#deg">Videre</a>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block skript %}
 <script>
 // Pluss/minus rundt et ekte number-felt: virker uten JS, bedre med.
-document.querySelectorAll(".antall").forEach(rad => {
+const rader = document.querySelectorAll(".antall");
+
+rader.forEach(rad => {
   const felt = rad.querySelector("input");
   const juster = n => {
     const min = +felt.min || 0, maks = +felt.max || 99;
     felt.value = Math.min(maks, Math.max(min, (+felt.value || 0) + n));
+    tegnKurv();
   };
   rad.querySelector(".trekk-fra").addEventListener("click", () => juster(-1));
   rad.querySelector(".legg-til").addEventListener("click", () => juster(1));
+  felt.addEventListener("input", tegnKurv);
 });
+
+// Kurven speiler feltene — den er ikke en egen sannhet. Skjemaet sendes
+// fortsatt med nøyaktig de samme feltene som før.
+const kurv = document.getElementById("kurv");
+function tegnKurv() {
+  if (!kurv) return;
+  let ore = 0, antall = 0;
+  rader.forEach(rad => {
+    const n = +rad.querySelector("input").value || 0;
+    antall += n;
+    ore += n * (+rad.dataset.pris || 0);
+  });
+  kurv.hidden = antall === 0;
+  document.getElementById("kurv-belop").textContent = (ore / 100) + " kr";
+  document.getElementById("kurv-antall").textContent =
+    antall + (antall === 1 ? " pizza" : " pizzaer");
+}
+tegnKurv();
 </script>
 {% endblock %}
