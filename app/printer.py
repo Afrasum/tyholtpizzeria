@@ -276,8 +276,9 @@ class Printer:
                     compress=True,
                     chaining=False,
                     auto_cut=True,
-                    # Mater etiketten forbi kniven. Se PRINT_SLUTTMARG.
-                    end_margin=config.PRINT_SLUTTMARG,
+                    # 0: denne modellen mater FOER trykket, ikke etter, sa
+                    # halen legges i selve bildet i stedet. Se PRINT_HALE.
+                    end_margin=0,
                 )
                 for linje in _encode.encode_raster_transfer(data, False):
                     ser.write(linje)

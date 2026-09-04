@@ -129,7 +129,14 @@ def render_strimmel(
         for i, e in enumerate(etiketter)
     ]
 
-    bredde = sum(b.width for b in biter) + KLIPPEROM * (len(biter) - 1)
+    # Blank hale sa siste etikett kommer helt ut av maskinen for vi klipper.
+    # Se config.PRINT_HALE for hvorfor dette ligger i bildet og ikke i
+    # margin-kommandoen.
+    bredde = (
+        sum(b.width for b in biter)
+        + KLIPPEROM * (len(biter) - 1)
+        + config.PRINT_HALE
+    )
     strimmel = Image.new("L", (bredde, HOYDE), 255)
     tegner = ImageDraw.Draw(strimmel)
 

@@ -45,19 +45,22 @@ QR_URL = os.environ.get("TP_QR_URL", "HTTPS://TYHOLTPIZZERIA.COM")
 # 1,1 cm tape per etikett, sa en tre-pizza ordre sparer 2,2 cm. Avveiningen er
 # deling: er QR-en bare pa en eske, er det bare den ene som kan deles videre.
 QR_BARE_FORSTE = os.environ.get("TP_QR_BARE_FORSTE", "0") == "1"
-# Mating ETTER hver utskrift, i punkter (180 dpi, sa 180 punkter = 25,4 mm).
+# Blank hale etter innholdet, i piksler (180 dpi, sa 180 px = 25,4 mm).
 #
-# Dette er ikke en finjustering. Skrivehodet sitter omtrent 25 mm inne i
-# maskinen, malt fra utgangsslissen. Med 0 her stopper tapen i det siste
-# punktet er trykt, og da ligger de siste 25 mm av etiketten fortsatt inni
-# printeren. En kort etikett - «S4 Morten» er 31 mm - kommer da ut med bare
-# 6 mm synlig, altsa en enkelt bokstav. Lange strimler sa nesten riktige ut,
-# og det var derfor feilen kunne ligge ubemerket.
+# Skrivehodet sitter omtrent 25 mm inne i maskinen, malt fra utgangsslissen.
+# Uten en hale stopper tapen i det siste punktet som er trykt, og da ligger
+# slutten av etiketten fortsatt inni printeren: «S4 Morten» er 31 mm, og bare
+# 6 mm - en enslig bokstav - kom ut.
 #
-# P300BT har ingen autokutter, sa vi ma mate innholdet forbi kniven selv.
-# Justerbar fordi den eksakte avstanden varierer litt mellom eksemplarer:
-# kommer det for mye blank tape etter teksten, senk tallet.
-PRINT_SLUTTMARG = int(os.environ.get("TP_PRINT_SLUTTMARG", "180"))
+# Vi printer blanke rader framfor a be om margin. ESC i d ble provd forst og
+# mater FOER trykket pa denne modellen, sa 180 der gjorde etiketten helt blank
+# i stedet for a redde den. Blanke rader er utvetydige: tapen matte flytte seg
+# for a printe dem.
+#
+# Koster ingen ekstra tape i lengden - halen blir neste etiketts forkant.
+# Kommer det for mye blankt etter QR-koden, senk tallet. Blir slutten fortsatt
+# borte, ok det.
+PRINT_HALE = int(os.environ.get("TP_PRINT_HALE", "190"))
 PRINT_TIDSAVBRUDD = int(os.environ.get("TP_PRINT_TIDSAVBRUDD", "30"))
 PRINT_MAKS_FORSOK = int(os.environ.get("TP_PRINT_MAKS_FORSOK", "12"))
 # Pause etter hver strimmel, sa tapen kommer helt ut for neste jobb starter.
