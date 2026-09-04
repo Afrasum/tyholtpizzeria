@@ -129,14 +129,7 @@ def render_strimmel(
         for i, e in enumerate(etiketter)
     ]
 
-    # Blank hale sa siste etikett kommer helt ut av maskinen for vi klipper.
-    # Se config.PRINT_HALE for hvorfor dette ligger i bildet og ikke i
-    # margin-kommandoen.
-    bredde = (
-        sum(b.width for b in biter)
-        + KLIPPEROM * (len(biter) - 1)
-        + config.PRINT_HALE
-    )
+    bredde = sum(b.width for b in biter) + KLIPPEROM * (len(biter) - 1)
     strimmel = Image.new("L", (bredde, HOYDE), 255)
     tegner = ImageDraw.Draw(strimmel)
 
@@ -247,6 +240,26 @@ def _tegn(
             bilde.paste(qr, (bredde - MARG - qr_side, TRYKK_TOPP))
 
     return bilde
+
+
+def render_svart_stripe(sti: Path, mm: int = 40) -> Path:
+    """En heldekkende svart stripe, uten tekst og uten QR.
+
+    Diagnoseverktoy, ikke en etikett. Den svarer pa ETT sporsmal: klarer
+    skrivehodet a sette merke pa tapen som ligger i maskinen na?
+
+    Kommer det ut en svart stripe, virker hode, tape og batteri, og da er
+    feilen i bildet vart eller i geometrien. Kommer det ut blankt, er det
+    ingenting galt med koden - da er det maskinen eller kassetten.
+    """
+    bredde = max(1, int(mm / 25.4 * 180))
+    bilde = Image.new("L", (bredde, HOYDE), 255)
+    ImageDraw.Draw(bilde).rectangle(
+        (0, TRYKK_TOPP, bredde - 1, TRYKK_TOPP + TRYKK_HOYDE - 1), fill=0
+    )
+    sti.parent.mkdir(parents=True, exist_ok=True)
+    bilde.save(sti)
+    return sti
 
 
 def forhandsvis_binarisert(sti_inn: Path, sti_ut: Path, terskel: int = 128) -> Path:

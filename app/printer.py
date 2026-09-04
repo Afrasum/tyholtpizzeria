@@ -243,25 +243,6 @@ class Printer:
 
     # ── Printing ───────────────────────────────────────────────────────────
 
-    @staticmethod
-    def _rasterlinjer(data: bytes):
-        """Send hver linje som ekte data. Aldri 'Z'.
-
-        labelmaker_encode koder en helt blank linje som ettbyte-kommandoen
-        'Z' (zerofill). P300BT ser ut til a ignorere den: blanke linjer
-        forsvinner rett og slett, og da klapper etiketten sammen til bare de
-        radene som har blekk i seg. Symptomet var en etikett der det sto
-        «I:» - restene av teksten presset mot hverandre - og en blank hale
-        pa 190 linjer som ikke matet tapen en millimeter, fordi alle 190 var
-        'Z'.
-
-        En blank linje som ekte RLE-data er fem byte i stedet for en. For en
-        hel strimmel er det noen kilobyte ekstra over Bluetooth, og det er
-        en billig pris for at tapen faktisk flytter seg.
-        """
-        for i in range(0, len(data), 16):
-            yield _ptcbp.serialize_data(data[i : i + 16], "rle")
-
     def skriv_ut(
         self, nummer: int, etiketter: list[dict], kundenavn: str = ""
     ) -> None:
@@ -283,6 +264,20 @@ class Printer:
             _last_vendor()
             data = _encode.read_png(str(png))
 
+        self._send_png(png_data=data)
+
+        logg.info(
+            "strimmel printet: nr %s, %s etikett(er): %s",
+            nummer, len(etiketter), ", ".join(e["tekst"] for e in etiketter),
+        )
+
+    def _send_png(self, png_data: bytes) -> None:
+        """Send ferdig rasterisert bildedata til printeren.
+
+        Skilt ut fra skriv_ut sa diagnosestripa gar NOYAKTIG samme vei som en
+        ekte etikett - samme oppsett, samme overforing, samme drenering.
+        """
+        data = png_data
         with self._laas:
             try:
                 ser = self._apne()
@@ -295,11 +290,9 @@ class Printer:
                     compress=True,
                     chaining=False,
                     auto_cut=True,
-                    # 0: denne modellen mater FOER trykket, ikke etter, sa
-                    # halen legges i selve bildet i stedet. Se PRINT_HALE.
                     end_margin=0,
                 )
-                for linje in self._rasterlinjer(data):
+                for linje in _encode.encode_raster_transfer(data, False):
                     ser.write(linje)
                 ser.write(_ptcbp.serialize_control("print"))
 
@@ -315,10 +308,18 @@ class Printer:
                 self._lukk()
                 raise PrinterFeil(f"{type(e).__name__}: {e}") from e
 
-        logg.info(
-            "strimmel printet: nr %s, %s etikett(er): %s",
-            nummer, len(etiketter), ", ".join(e["tekst"] for e in etiketter),
-        )
+    def skriv_ut_stripe(self, mm: int = 40) -> None:
+        """Print en heldekkende svart stripe. Se etikett.render_svart_stripe."""
+        if not tilgjengelig():
+            raise PrinterFeil("Printing er ikke satt opp.")
+        import tempfile  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="tyholt-stripe-") as katalog:
+            png = etikett.render_svart_stripe(Path(katalog) / "stripe.png", mm)
+            _last_vendor()
+            data = _encode.read_png(str(png))
+        self._send_png(png_data=data)
+        logg.info("svart teststripe printet: %s mm", mm)
 
 
 printer = Printer()
@@ -326,6 +327,10 @@ printer = Printer()
 
 def skriv_ut(nummer: int, etiketter: list[dict], kundenavn: str = "") -> None:
     printer.skriv_ut(nummer, etiketter, kundenavn)
+
+
+def skriv_ut_stripe(mm: int = 40) -> None:
+    printer.skriv_ut_stripe(mm)
 
 
 def status() -> dict:
