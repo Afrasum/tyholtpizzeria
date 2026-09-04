@@ -190,8 +190,9 @@ def skriv_ut_paa_nytt(ordre_id: int, _=Depends(auth.krev)):
 
 
 @ruter.post("/ordre/{ordre_id}/slett")
-def slett_ordre(ordre_id: int, _=Depends(auth.krev)):
-    ordrer.slett_ordre(ordre_id)
+def skjul_ordre(ordre_id: int, _=Depends(auth.krev)):
+    """Tar ordren ut av arbeidsflaten. Raden blir staaende i basen."""
+    ordrer.skjul_ordre(ordre_id)
     return RedirectResponse("/admin", status_code=303)
 
 

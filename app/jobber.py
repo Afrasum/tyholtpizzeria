@@ -210,7 +210,9 @@ def feilede() -> list:
                 """
                 SELECT j.*, o.dagsnummer, o.kundenavn
                 FROM jobb j LEFT JOIN ordre o ON o.id = j.ordre_id
-                WHERE j.status = 'feilet' ORDER BY j.id DESC LIMIT 50
+                WHERE j.status = 'feilet'
+                  AND COALESCE(o.skjult, 0) = 0   -- en fjernet ordre skal ikke mase
+                ORDER BY j.id DESC LIMIT 50
                 """
             )
         )

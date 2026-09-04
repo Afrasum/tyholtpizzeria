@@ -38,13 +38,16 @@
     <form method="post" action="/admin/ordre/{{ o.id }}/skriv-ut" class="inline">
       <button type="submit" class="knapp">Skriv ut igjen</button>
     </form>
-    {# To trinn, ikke en dialogboks: forste trykk spor, andre sletter. En
-       dialog midt i et rush er verre enn et trykk til. #}
+    {# «Fjern», ikke «slett»: ordren tas ut av lista og av tavla, men raden
+       blir staaende i basen sa tallene stemmer naar kvelden gjores opp.
+       To trinn framfor en dialogboks — en dialog midt i et rush er verre
+       enn et trykk til. #}
     <form method="post" action="/admin/ordre/{{ o.id }}/slett" class="inline">
-      <button type="submit" class="knapp slett" data-sporsmal="Slett {{ o.dagsnummer }}?"
-              aria-label="Slett bestilling {{ o.dagsnummer }} for godt">
+      <button type="submit" class="knapp slett" data-sporsmal="Fjern {{ o.dagsnummer }}?"
+              title="Tar {{ o.dagsnummer }} ut av lista og tavla. Ordren blir liggende i basen."
+              aria-label="Fjern bestilling {{ o.dagsnummer }} fra lista">
         <svg class="ikon" aria-hidden="true"><use href="#soppel"></use></svg>
-        <span class="ord">Slett</span>
+        <span class="ord">Fjern</span>
       </button>
     </form>
   </div>

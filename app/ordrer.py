@@ -453,18 +453,40 @@ def sett_betalt(ordre_id: int, betalt: bool, aktor: str = "admin") -> None:
         )
 
 
-def slett_ordre(ordre_id: int) -> bool:
-    """Fjern en enkelt ordre helt. Returnerer om det faktisk fantes en.
+def skjul_ordre(ordre_id: int, skjult: bool = True) -> bool:
+    """Ta en ordre ut av arbeidsflaten uten a slette den.
 
-    Til feilbestillinger og prøvetrykk: en ordre som aldri skulle eksistert
-    skal kunne forsvinne, ikke ligge igjen som «avbrutt» og stjele plass i
-    kjokkenkoen. Linjer, statuslogg og jobber folger med via ON DELETE CASCADE.
+    Til feilbestillinger og provetrykk: en ordre som aldri skulle eksistert
+    skal forsvinne fra kjokkenkoen og fra tavla, ikke ligge igjen som
+    «avbrutt» og stjele oppmerksomhet. Men raden blir staaende i basen, sa
+    tallene stemmer naar kvelden gjores opp — og et feiltrykk kan angres.
 
-    Nummeret gjenbrukes IKKE — telleren teller videre. To esker med samme
-    nummer samme kveld er en verre feil enn et hull i rekka.
+    Nummeret gjenbrukes IKKE. Telleren teller videre uansett, sa to esker
+    aldri kan baere samme tall samme kveld.
     """
     with transaksjon() as kob:
-        return kob.execute("DELETE FROM ordre WHERE id = ?", (ordre_id,)).rowcount > 0
+        tid = naa()
+        endret = kob.execute(
+            "UPDATE ordre SET skjult = ?, oppdatert = ? WHERE id = ?",
+            (1 if skjult else 0, tid, ordre_id),
+        ).rowcount > 0
+        if endret and skjult:
+            # Ellers spytter printeren ut etiketten til en ordre som nettopp
+            # ble fjernet. Jobber som alt kjorer rekker vi ikke — tapen er i
+            # bevegelse — men koen skal toemmes. Jobbtabellen har ingen
+            # 'avbrutt'-status, sa vi bruker 'feilet' med grunnen skrevet inn.
+            kob.execute(
+                "UPDATE jobb SET status = 'feilet', siste_feil = 'ordren ble fjernet',"
+                " oppdatert = ? WHERE ordre_id = ? AND status = 'ny'",
+                (tid, ordre_id),
+            )
+        if endret:
+            kob.execute(
+                "INSERT INTO statuslogg (ordre_id, fra_status, til_status, aktor,"
+                " opprettet) VALUES (?, NULL, ?, 'admin', ?)",
+                (ordre_id, "skjult" if skjult else "synlig", tid),
+            )
+        return endret
 
 
 def slett_dagens_ordrer(salgsdag_id: int) -> int:
@@ -520,7 +542,8 @@ def for_admin(
 
     ordrer = list(
         kob.execute(
-            "SELECT * FROM ordre WHERE salgsdag_id = ? ORDER BY dagsnummer DESC",
+            "SELECT * FROM ordre WHERE salgsdag_id = ? AND skjult = 0"
+            " ORDER BY dagsnummer DESC",
             (salgsdag_id,),
         )
     )
@@ -561,7 +584,7 @@ def klare_numre(
         r["dagsnummer"]
         for r in kob.execute(
             "SELECT dagsnummer FROM ordre WHERE salgsdag_id = ? AND status = 'klar'"
-            " ORDER BY oppdatert",
+            " AND skjult = 0 ORDER BY oppdatert",
             (dag["id"],),
         )
     ]

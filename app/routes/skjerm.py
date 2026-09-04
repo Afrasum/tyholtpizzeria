@@ -33,7 +33,7 @@ def _tall(kob) -> dict:
     under = [
         r["dagsnummer"]
         for r in kob.execute(
-            f"SELECT dagsnummer FROM ordre WHERE salgsdag_id = ?"
+            f"SELECT dagsnummer FROM ordre WHERE salgsdag_id = ? AND skjult = 0"
             f" AND status IN ({plassholdere}) ORDER BY dagsnummer",
             (dag["id"], *UNDER_ARBEID),
         )

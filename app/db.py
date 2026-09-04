@@ -69,6 +69,10 @@ TILLEGGSKOLONNER: tuple[tuple[str, str, str], ...] = (
     # utledes fra ordre-tabellen, fordi en slettet ordre ellers ville frigjort
     # nummeret sitt til neste kunde.
     ("salgsdag", "sistenummer", "INTEGER NOT NULL DEFAULT 0"),
+    # Skjulte ordrer er fjernet fra arbeidsflaten, ikke fra basen. Feiltrykk
+    # og provetrykk skal forsvinne fra kjokkenkoen og tavla, men tallene skal
+    # fortsatt stemme naar kvelden gjores opp.
+    ("ordre", "skjult", "INTEGER NOT NULL DEFAULT 0"),
 )
 
 

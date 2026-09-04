@@ -479,34 +479,78 @@ def test_skjermen_viser_nye_ordrer_som_under_arbeid(tmp_path, monkeypatch):
     assert d["nummer"] not in tall["under_arbeid"] + tall["klare"]
 
 
-def test_slett_ordre_fjerner_alt_men_gjenbruker_ikke_nummeret(tmp_path, monkeypatch):
+def test_skjul_ordre_tar_den_ut_av_flatene_men_beholder_raden(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
     _tving_apent(db)
-    from app.ordrer import Onske, opprett, slett_ordre
+    from app import ordrer
+    from app.ordrer import Onske, opprett, skjul_ordre
 
     eid = _meny_id(db, "margherita")
-    forste = opprett("Feiltrykk", "a@example.com", [Onske(eid, 2)])
-    oid = forste["ordre_id"]
+    feil = opprett("Feiltrykk", "a@example.com", [Onske(eid, 2)])
+    ekte = opprett("Ekte", None, [Onske(eid, 1)])
+    ordrer.sett_status(feil["ordre_id"], "i_produksjon")
+    ordrer.sett_status(feil["ordre_id"], "klar")
+    ordrer.sett_status(ekte["ordre_id"], "i_produksjon")
+    ordrer.sett_status(ekte["ordre_id"], "klar")
 
-    def antall(tabell):
-        nokkel = "id" if tabell == "ordre" else "ordre_id"
-        with db.kobling() as kob:
-            return kob.execute(
-                f"SELECT count(*) FROM {tabell} WHERE {nokkel} = ?", (oid,)
-            ).fetchone()[0]
+    with db.kobling() as kob:
+        assert len(ordrer.for_admin(kob)) == 2
+        assert feil["nummer"] in ordrer.klare_numre(kob)
 
-    # Linjer, logg og jobber finnes for slettingen.
-    assert antall("ordrelinje") == 1
-    assert antall("statuslogg") >= 1
-    assert antall("jobb") >= 1
+    assert skjul_ordre(feil["ordre_id"]) is True
 
-    assert slett_ordre(oid) is True
-    assert slett_ordre(oid) is False          # idempotent, ikke en feil
+    # Borte fra arbeidsflatene ...
+    with db.kobling() as kob:
+        synlige = [r["ordre"]["dagsnummer"] for r in ordrer.for_admin(kob)]
+        assert synlige == [ekte["nummer"]]
+        assert feil["nummer"] not in ordrer.klare_numre(kob)
 
-    for tabell in ("ordre", "ordrelinje", "statuslogg", "jobb"):
-        assert antall(tabell) == 0, f"{tabell} hadde rader igjen"
+        # ... men raden og alt som henger ved den staar igjen.
+        rad = kob.execute(
+            "SELECT skjult FROM ordre WHERE id = ?", (feil["ordre_id"],)
+        ).fetchone()
+        assert rad is not None and rad["skjult"] == 1
+        assert kob.execute(
+            "SELECT count(*) c FROM ordrelinje WHERE ordre_id = ?", (feil["ordre_id"],)
+        ).fetchone()["c"] == 1
 
-    # Telleren gaar videre. To esker med samme nummer samme kveld er verre
-    # enn et hull i rekka.
+    # Angrbar.
+    assert skjul_ordre(feil["ordre_id"], skjult=False) is True
+    with db.kobling() as kob:
+        assert len(ordrer.for_admin(kob)) == 2
+
+    # Nummeret gjenbrukes aldri, skjult eller ei.
+    skjul_ordre(feil["ordre_id"])
     neste = opprett("Etterpaa", None, [Onske(eid, 1)])
-    assert neste["nummer"] == forste["nummer"] + 1
+    assert neste["nummer"] == ekte["nummer"] + 1
+
+
+def test_skjult_ordre_stopper_koen_og_slutter_a_mase(tmp_path, monkeypatch):
+    """En fjernet ordre skal ikke printes, og ikke staa igjen i feilbanneret."""
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    from app import jobber
+    from app.ordrer import Onske, opprett, skjul_ordre
+
+    eid = _meny_id(db, "margherita")
+    ordre = opprett("Feiltrykk", None, [Onske(eid, 1)])
+    oid = ordre["ordre_id"]
+
+    def jobbstatus():
+        with db.kobling() as kob:
+            return [
+                r["status"]
+                for r in kob.execute(
+                    "SELECT status FROM jobb WHERE ordre_id = ? AND type = 'etikett'",
+                    (oid,),
+                )
+            ]
+
+    assert "ny" in jobbstatus(), "etikettjobben skal ligge i koen for vi skjuler"
+
+    skjul_ordre(oid)
+
+    # Ingen jobb igjen som en arbeider kan plukke opp.
+    assert "ny" not in jobbstatus()
+    # ... og den staar ikke i feilbanneret i admin, selv om den er merket feilet.
+    assert all(j["ordre_id"] != oid for j in jobber.feilede())
