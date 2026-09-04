@@ -3,7 +3,7 @@
 #
 #   ssh -t rpi5 "sudo sh ~/projects/tyholtpizzeria/deploy/install-app.sh"
 #
-# Idempotent. Bytter port 8009 fra Caddy (plassholdersida) til uvicorn.
+# Idempotent. Appen lytter paa 8009, der cloudflared-tunnelen slipper inn.
 # Cloudflared-ingressen peker alt paa 8009, saa den roeres ikke - det er
 # nettopp derfor vi beholdt porten. Rollback er aa reversere de to
 # systemctl-linjene.
@@ -37,11 +37,6 @@ if [ ! -f "$REPO/.env" ]; then
 	echo "    !! $REPO/.env mangler. Lag den foerst (se .env.eksempel)."
 	exit 1
 fi
-
-echo "==> gir 8009 fra Caddy til uvicorn"
-# Plassholdersida og appen kan ikke lytte paa samme port samtidig.
-systemctl disable --now tyholtpizzeria-site.service 2>/dev/null || true
-echo "    Caddy-unitet er avslaatt (reverser med: systemctl enable --now tyholtpizzeria-site)"
 
 systemctl daemon-reload
 systemctl enable --now tyholtpizzeria.service

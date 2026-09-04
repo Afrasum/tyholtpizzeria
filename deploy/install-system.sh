@@ -1,5 +1,9 @@
 #!/bin/sh
-# Systemnivå-oppsett for tyholtpizzeria.afrasum.dev på rpi5. Krever sudo.
+# Systemnivå-oppsett for tyholtpizzeria på rpi5. Krever sudo.
+#
+# Gjør én ting: peker vertsnavnet inn i cloudflared-tunnelen mot port 8009.
+# Selve appen installeres av install-app.sh, som ikke krever sudo til annet
+# enn systemd.
 #
 #   ssh -t rpi5 "sudo sh ~/projects/tyholtpizzeria/deploy/install-system.sh"
 #
@@ -12,18 +16,6 @@ REPO=/home/afras/projects/tyholtpizzeria
 CF=/etc/cloudflared/config.yml
 VERT=tyholtpizzeria.afrasum.dev
 PORT=8009
-
-echo "==> Caddy-config og site-unit"
-install -m 644 "$REPO/deploy/tyholtpizzeria.Caddyfile"    /etc/caddy/tyholtpizzeria.Caddyfile
-install -m 644 "$REPO/deploy/tyholtpizzeria-site.service" /etc/systemd/system/tyholtpizzeria-site.service
-
-caddy validate --adapter caddyfile --config /etc/caddy/tyholtpizzeria.Caddyfile >/dev/null
-echo "    Caddyfile validerer"
-
-systemctl daemon-reload
-systemctl enable --now tyholtpizzeria-site.service
-systemctl restart tyholtpizzeria-site.service
-echo "    tyholtpizzeria-site.service kjører"
 
 echo "==> Cloudflared ingress"
 if grep -q "$VERT" "$CF"; then

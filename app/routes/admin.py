@@ -73,7 +73,6 @@ def oversikt(
 ):
     with kobling() as kob:
         rader = ordrer.for_admin(kob)
-        dag = ordrer.aapen_salgsdag(kob)
         aapent, grunn = ordrer.kan_bestille(kob)
 
         for rad in rader:
@@ -93,7 +92,6 @@ def oversikt(
             "admin/oversikt.html",
             {
                 "rader": rader,
-                "dag": dag,
                 "aapent": aapent,
                 "grunn": grunn,
                 "meny": meny.full_meny(kob),

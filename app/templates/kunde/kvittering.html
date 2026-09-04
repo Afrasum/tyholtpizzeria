@@ -6,17 +6,12 @@
 
   <p class="takk">Takk, {{ ordre.kundenavn.split()[0] }} — bestillingen er inne.</p>
 
-  {# Faksimile av den fysiske etiketten som havner på esken din. Samme kode,
-     samme nummer, samme skrift som tapen kokken leser. #}
-  <div class="etikett-faksimile">
-    <span class="hovedkode">{{ linjer[0].etikett_snapshot[:1] | upper }}{{ ordre.dagsnummer }}</span>
-    <span class="bi">
-      <b>{{ ordre.kundenavn.split()[0] }}</b>
-      {% set antall = linjer | sum(attribute="antall") %}
-      · {{ antall }} {% if antall == 1 %}pizza{% else %}pizzaer{% endif %}
-    </span>
+  {# Nummeret, og ingenting annet. Det er dette vi roper opp og dette som
+     staar paa tavla — kunden skal aldri lete etter en etikett. #}
+  <div class="ditt-nummer">
+    <span class="merkelapp">Nummeret ditt</span>
+    <span class="tallet mono">{{ ordre.dagsnummer }}</span>
   </div>
-  <p class="etikett-under">Slik ser etiketten på esken din ut</p>
 
   <div class="status-boks" data-status="{{ ordre.status }}">
     <span class="lampe" aria-hidden="true"></span>
@@ -79,18 +74,51 @@
 {% block skript %}
 <script>
 // Poller status sa kunden ser «Klar til henting» uten a laste pa nytt.
+//
+// Tre sperrer mot at en glemt fane spor i det uendelige: den stopper helt nar
+// det ikke er mer a vente pa, den hviler mens telefonen ligger i lomma, og den
+// trapper ned etter hvert som det blir mindre sannsynlig at noe skjer.
 const ordreId = {{ ordre.id }};
 const boks = document.querySelector(".status-boks");
-setInterval(async () => {
+const FERDIG = ["levert", "forlatt", "avbrutt"];
+const startet = Date.now();
+let klokke = null;
+
+function pause() {
+  const gaatt = Date.now() - startet;
+  if (gaatt < 5 * 60 * 1000) return 5000;      // de forste minuttene haster
+  if (gaatt < 60 * 60 * 1000) return 15000;
+  return 30000;
+}
+
+function planlegg() {
+  clearTimeout(klokke);
+  klokke = setTimeout(hent, pause());
+}
+
+async function hent() {
+  // Ligger fanen i bakgrunnen, spor vi ikke. Lytteren under vekker oss.
+  if (document.visibilityState !== "visible") return;
   try {
     const r = await fetch(`/status/${ordreId}`);
-    if (!r.ok) return;
-    const d = await r.json();
-    if (!d.finnes) return;
-    document.getElementById("status").textContent = d.statusnavn;
-    boks.dataset.status = d.status;
+    if (r.ok) {
+      const d = await r.json();
+      if (d.finnes) {
+        document.getElementById("status").textContent = d.statusnavn;
+        boks.dataset.status = d.status;
+        if (FERDIG.includes(d.status)) return;   // ingenting mer a vente pa
+      }
+    }
   } catch (e) { /* nettverkshikk: proev igjen neste runde */ }
-}, 5000);
+  planlegg();
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") hent();
+  else clearTimeout(klokke);
+});
+
+if (!FERDIG.includes(boks.dataset.status)) planlegg();
 
 // Kopier Vipps-nummeret. Ingen verifisert deeplenke finnes offentlig, sa
 // dette er den palitelige snarveien: ett trykk, sa er nummeret i utklippet.

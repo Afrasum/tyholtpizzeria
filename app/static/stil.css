@@ -531,36 +531,34 @@ small { display: block; margin-top: .4rem; font-size: .875rem; color: var(--blek
   line-height: 1.25;
 }
 
-/* Faksimile av den fysiske etiketten som havner på esken. Samme kode, samme
-   nummer, samme mono som tapen kokken leser. */
-.etikett-faksimile {
-  position: relative;
-  padding: 1.6rem 1.5rem;
-  border-radius: 4px;
+/* Nummeret, saa stort som det faar lov. Det er det eneste kunden trenger aa
+   huske, og det eneste vi roper opp. */
+.ditt-nummer {
+  margin-bottom: 1.9rem;
+  padding: 1.6rem 1.5rem 1.75rem;
+  border-radius: var(--rund);
   background: var(--kvittering);
+  text-align: center;
   box-shadow: 0 10px 24px -14px rgba(30, 20, 14, .55);
 }
-.etikett-faksimile::before {
-  content: "";
-  position: absolute;
-  left: 8px; top: 12px; bottom: 12px;
-  width: 3px;
-  opacity: .35;
-  background: repeating-linear-gradient(to bottom, #6f675d 0 2px, transparent 2px 6px);
-}
-.etikett-faksimile .hovedkode {
+.ditt-nummer .merkelapp {
   display: block;
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 24;
+  font-size: 1rem;
+  color: var(--blekk-mild);
+}
+.ditt-nummer .tallet {
+  display: block;
+  margin-top: .35rem;
   font-family: var(--mono);
   font-weight: 700;
-  font-size: 3.75rem;
+  font-size: 5.5rem;
   line-height: 1;
-  letter-spacing: -.02em;
+  letter-spacing: -.03em;
   color: var(--morkere);
 }
-.etikett-faksimile .bi { display: block; margin-top: .7rem; font-size: 1rem; color: #6f675d; }
-.etikett-faksimile .bi b { color: var(--morkere); }
-
-.etikett-under { margin: .75rem 0 1.9rem; text-align: center; font-size: .875rem; color: var(--blekk-mild); }
 
 .status-boks {
   display: flex;
@@ -805,13 +803,18 @@ main.admin { max-width: 100rem; padding-top: 2rem; }
 
 .styring-tittel { margin: 2.75rem 0 1.15rem; font-size: 2.125rem; }
 
-/* Spalter, ikke rutenett: boksene er ulikt hoye, og et rutenett ville latt
-   den hoyeste dra en tom luke etter seg i hele raden. */
-.styring { columns: 17rem; column-gap: 1rem; }
+/* Rutenett som fyller bortover, ikke spalter som fyller nedover: boksene skal
+   leses fra venstre mot hoyre slik alt annet paa sida gjor. align-items: start
+   er det som hindrer at den hoyeste boksen strekker hele raden — de faar ulik
+   underkant i stedet, og det er den riktige byttehandelen. */
+.styring {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
 
 .styringsboks {
-  break-inside: avoid;
-  margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
   gap: .75rem;

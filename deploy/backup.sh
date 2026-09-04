@@ -9,8 +9,11 @@
 # .backup er trygg mot en base som skrives til samtidig - en ren filkopi kan
 # fange en halvskrevet WAL.
 #
-# Basen er noen titalls kB, sa en kopi tar millisekunder. Vi beholder de 360
-# nyeste, altsa seks timer med minuttkopier.
+# Basen er noen titalls kB, sa en kopi tar millisekunder. Kopier tas BARE nar
+# basen faktisk er endret, sa 20 000 er ikke 20 000 minutter - det er 20 000
+# ganger noe skjedde. Med ~8 kB per kopi er taket ~300 MB mot 78 GB ledig, og i
+# praksis slettes ingenting. Grensa finnes bare som sikkerhetsventil, slik at
+# noe som gar i loop ikke kan fylle disken.
 #
 # Filnavnene sorterer kronologisk leksikografisk (base-YYYYmmdd-HHMMSS), sa
 # vi bruker find | sort framfor "ls -t": ls er aliaset til eza pa
@@ -22,7 +25,7 @@ REPO=$(cd "$(dirname "$0")/.." && pwd)
 PYTHON=$REPO/.venv/bin/python
 BASE=${TP_DB:-/home/afras/data/tyholtpizzeria/base.db}
 KATALOG=$(dirname "$BASE")/backup
-BEHOLD=360
+BEHOLD=20000
 
 if [ ! -x "$PYTHON" ]; then
 	echo "backup: finner ikke $PYTHON" >&2

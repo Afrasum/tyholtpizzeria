@@ -1,37 +1,69 @@
-# tyholtpizzeria.afrasum.dev
+# Tyholt Pizzeria
 
-Statisk side servert av Caddy på rpi5, eksponert gjennom cloudflared-tunnelen
-`rpi`. Foreløpig bare en plassholderside.
+Bestillingssystem for et pop-up pizzeria: kundeside, admin-dashbord for
+kjøkken og kasse, og en henteskjerm som står vendt mot rommet. FastAPI og
+SQLite, kjørt på rpi5 og eksponert gjennom cloudflared-tunnelen `rpi`.
 
-    Cloudflare → cloudflared (tunnel «rpi») → localhost:8009 → Caddy → dette repoet
+    Cloudflare → cloudflared (tunnel «rpi») → localhost:8009 → uvicorn
+
+Etikettene printes på en Brother PT-P300BT over Bluetooth (`/dev/rfcomm0`).
+
+## Domener
+
+| URL | Hva |
+|---|---|
+| `tyholtpizzeria.com` | kundesida — meny og bestilling |
+| `/admin` | ordrekø, statusknapper, utsolgt, Vipps-mottaker |
+| `/skjerm` | henteskjermen — kun numre, ingen navn |
+
+## Kjøre lokalt
+
+    uv run uvicorn app.main:app --reload --port 8123
+
+Uten `TP_PRINTER_PORT` er printing av, og uten `TP_SMTP_VERT` logges
+e-postene i stedet for å sendes. Da kjører alt likt på Mac som på Pi.
+
+    uv run pytest -q
 
 ## Oppsett på rpi5
 
-Klon repoet og kjør systemoppsettet én gang:
+Én gang:
 
     ssh rpi5 'git clone git@github.com:Afrasum/tyholtpizzeria.git ~/projects/tyholtpizzeria'
     ssh -t rpi5 "sudo sh ~/projects/tyholtpizzeria/deploy/install-system.sh"
+    ssh -t rpi5 "sudo sh ~/projects/tyholtpizzeria/deploy/install-app.sh"
     ssh rpi5 'cloudflared tunnel route dns rpi tyholtpizzeria.afrasum.dev'
 
-`install-system.sh` er idempotent: den legger Caddyfilen og systemd-unitet på
-plass, og skyter inn ingress-regelen i `/etc/cloudflared/config.yml` rett før
-catch-all. Configen backes opp og valideres, og rulles tilbake hvis den feiler.
+Begge skriptene er idempotente. `install-system.sh` skyter ingress-regelen inn
+i `/etc/cloudflared/config.yml` rett før catch-all, med backup og validering og
+rullback hvis valideringen feiler.
 
-## Publisere endringer
-
-Caddy serverer arbeidstreet direkte, så `git pull` er publiseringen:
+## Deploye endringer
 
     ssh rpi5 'git -C ~/projects/tyholtpizzeria pull'
+    ssh -t rpi5 "sudo systemctl restart tyholtpizzeria"
 
-Ingen restart trengs for innholdsendringer. Endrer du `deploy/`-filene må
-`install-system.sh` kjøres på nytt.
+Restart er nødvendig: malene, stilarket og eventuelle skjemamigreringer leses
+ved oppstart. Versjonsnøkkelen på `/static` følger filenes mtime, så
+Cloudflare-cachen brytes av seg selv når tjenesten starter på nytt.
+
+## Viktige begrensninger
+
+- **Én uvicorn-arbeider.** Tildelingen av dagsnummer bygger på SQLites
+  skrivelås i én prosess, og printeren tåler bare én tilkobling om gangen.
+- **Databasen ligger utenfor git-treet** (`~/data/tyholtpizzeria/base.db`), med
+  backup hvert minutt til `backup/` ved siden av.
+- **Klokka stenger ikke.** Bare den manuelle bryteren i admin gjør det.
 
 ## Filer
 
 | Fil | Rolle |
 |---|---|
-| `index.html`, `css/stil.css` | selve siden |
-| `deploy/tyholtpizzeria.Caddyfile` | Caddy-config, lytter på `:8009` |
-| `deploy/tyholtpizzeria-site.service` | systemd-unit som kjører Caddy |
-| `deploy/install-system.sh` | systemoppsett, krever sudo |
-| `deploy/cf_ingress.py` | legger ingress-regelen inn i cloudflared-configen |
+| `app/ordrer.py` | kjernen: dagsnummer, statusflyt, oppslag |
+| `app/jobber.py` | jobbkø, én arbeidertråd per type |
+| `app/printer.py` | eier serietilkoblingen til etikettprinteren |
+| `app/schema.sql` | skjema, kjøres idempotent ved oppstart |
+| `deploy/install-system.sh` | cloudflared-ingress, krever sudo |
+| `deploy/install-app.sh` | venv, systemd-units, backup-timer |
+| `deploy/backup.sh` | minuttkopi av basen, kjøres av timeren |
+| `vendor/PT-P300BT/` | tredjeparts printerbibliotek |

@@ -64,7 +64,6 @@
     <h1>Bestillinger</h1>
     <ul class="nokkeltall">
       <li class="solgt">{{ solgt }} pizzaer</li>
-      {% if dag %}<li>{{ dag.dato }}</li>{% else %}<li>ingen salgsdag</li>{% endif %}
       <li>{{ "Åpent" if aapent else "Stengt" }}</li>
     </ul>
     <div class="hoyre">
@@ -199,6 +198,41 @@
       <small>Låser den seg: skru den av og på. Køen skriver seg ut selv.</small>
     </div>
 
+    <div class="styringsboks">
+      <h3>E-post</h3>
+      {% if smtp_vert %}
+        <p class="naa">Sender via {{ smtp_vert }}</p>
+      {% else %}
+        <p class="naa">Ikke satt opp — bekreftelser logges og hoppes over</p>
+      {% endif %}
+      {% if epost_resultat %}
+        <p class="epost-svar {{ 'ok' if epost_resultat == 'ok' else 'feil' }}">{{ epost_melding }}</p>
+      {% endif %}
+      <form method="post" action="/admin/epost-test">
+        <label>
+          <span class="navn-paa-felt">Send test til</span>
+          <input type="email" name="til" autocomplete="off" required>
+        </label>
+        <button type="submit" class="knapp">Send testmelding</button>
+      </form>
+      <small>Feilmeldingen fra serveren vises ordrett — den sier om det er
+        passordet, verten eller avsenderadressen som er feil.</small>
+    </div>
+
+    <div class="styringsboks farlig">
+      <h3>Nullstill dagen</h3>
+      {% if slettet is not none %}<p class="naa">{{ slettet }} ordrer slettet.</p>{% endif %}
+      {% if nullstill_avvist %}<p class="naa">Skriv SLETT for å bekrefte.</p>{% endif %}
+      <form method="post" action="/admin/nullstill">
+        <label>
+          <span class="navn-paa-felt">Skriv SLETT</span>
+          <input type="text" name="bekreft" autocomplete="off">
+        </label>
+        <button type="submit" class="knapp fare">Slett dagens ordrer</button>
+      </form>
+      <small>Til opprydding etter prøvebestillinger. Backup tas hvert minutt.</small>
+    </div>
+
     <div class="styringsboks vipps-boks">
       <h3>Hvem tar imot betaling</h3>
       {% if vipps_ugyldig %}<p class="naa">Trenger navn og et gyldig 8-sifret nummer.</p>{% endif %}
@@ -235,41 +269,6 @@
       </details>
 
       <small>Slår gjennom på kvittering og e-post med én gang.</small>
-    </div>
-
-    <div class="styringsboks">
-      <h3>E-post</h3>
-      {% if smtp_vert %}
-        <p class="naa">Sender via {{ smtp_vert }}</p>
-      {% else %}
-        <p class="naa">Ikke satt opp — bekreftelser logges og hoppes over</p>
-      {% endif %}
-      {% if epost_resultat %}
-        <p class="epost-svar {{ 'ok' if epost_resultat == 'ok' else 'feil' }}">{{ epost_melding }}</p>
-      {% endif %}
-      <form method="post" action="/admin/epost-test">
-        <label>
-          <span class="navn-paa-felt">Send test til</span>
-          <input type="email" name="til" autocomplete="off" required>
-        </label>
-        <button type="submit" class="knapp">Send testmelding</button>
-      </form>
-      <small>Feilmeldingen fra serveren vises ordrett — den sier om det er
-        passordet, verten eller avsenderadressen som er feil.</small>
-    </div>
-
-    <div class="styringsboks farlig">
-      <h3>Nullstill dagen</h3>
-      {% if slettet is not none %}<p class="naa">{{ slettet }} ordrer slettet.</p>{% endif %}
-      {% if nullstill_avvist %}<p class="naa">Skriv SLETT for å bekrefte.</p>{% endif %}
-      <form method="post" action="/admin/nullstill">
-        <label>
-          <span class="navn-paa-felt">Skriv SLETT</span>
-          <input type="text" name="bekreft" autocomplete="off">
-        </label>
-        <button type="submit" class="knapp fare">Slett dagens ordrer</button>
-      </form>
-      <small>Til opprydding etter prøvebestillinger. Backup tas hvert minutt.</small>
     </div>
 
   </section>
