@@ -769,10 +769,35 @@ main.admin { max-width: 100rem; padding-top: 2rem; }
   padding-top: .875rem;
   border-top: 1px solid var(--linje);
 }
+.handling { flex-direction: column; }
 .handling form { display: contents; }
-.handling .knapp { flex: 1 1 8rem; }
-/* Den anbefalte overgangen tar hele bredden — den skal treffes uten å se. */
-.handling .knapp.primar { flex: 1 1 100%; }
+
+/* Fast 2x3-tastatur. Rutene ligger i samme rekkefølge uansett hvilken status
+   ordren har, sa hånda lærer hvor «Klar til henting» er framfor å lete etter
+   den på nytt hver gang lista tegnes om. */
+.stegrad,
+.verktoyrad { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+
+.knapp.steg { min-height: 50px; padding: .5rem .55rem; font-size: .9rem; text-align: center; }
+.knapp.steg.primar { min-height: 50px; font-size: 1.05rem; }
+
+/* En rute som ikke er lovlig herfra holder plassen, men inviterer ikke. */
+.knapp.steg.av {
+  border-style: dashed;
+  background: transparent;
+  color: var(--blekk-svak);
+  cursor: default;
+}
+.knapp.steg.av:hover { border-color: var(--linje-sterk); color: var(--blekk-svak); }
+
+/* «Du står her.» Skal kunne leses, men aldri konkurrere med den røde
+   handlingen ved siden av — dette er en opplysning, ikke en knapp. */
+.knapp.steg.naa {
+  border-style: solid;
+  border-color: var(--linje-sterk);
+  background: var(--papir-varm);
+  color: var(--blekk-mild);
+}
 
 .ordretabell { display: none; }
 
@@ -897,9 +922,11 @@ main.admin { max-width: 100rem; padding-top: 2rem; }
 
   .ordretabell .etikett-feil { display: block; margin-top: .25rem; color: var(--tomat); font-size: .85rem; }
   .ordretabell .ordre.gammel { background: rgba(198, 58, 42, .07); }
-  .ordretabell .handling { padding-top: 0; border-top: none; }
-  .ordretabell .handling .knapp { flex: 0 0 auto; min-height: 40px; padding: .45rem .875rem; font-size: .875rem; }
-  .ordretabell .handling .knapp.primar { flex: 0 0 auto; min-height: 40px; font-size: 1rem; }
+  .ordretabell .handling { padding-top: 0; border-top: none; gap: .4rem; }
+  .ordretabell .stegrad,
+  .ordretabell .verktoyrad { gap: .4rem; }
+  .ordretabell .knapp { min-height: 38px; padding: .35rem .7rem; font-size: .85rem; }
+  .ordretabell .knapp.steg.primar { min-height: 38px; font-size: .95rem; }
 }
 
 /* ── Tavla ────────────────────────────────────────────────────────────── */

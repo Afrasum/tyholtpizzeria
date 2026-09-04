@@ -3,31 +3,51 @@
 {% block kropp_klasse %}admin{% endblock %}
 
 {# Makro sa kortene (mobil) og tabellen (PC) alltid tilbyr nøyaktig de samme
-   knappene. Knappene genereres fra FLYT, sa UI-et kan aldri foreslå en
-   ulovlig overgang. #}
+   knappene.
+
+   Alle seks stegene rendres ALLTID, i denne rekkefølgen, som et 2x3-tastatur.
+   Hånda skal lære hvor «Klar til henting» er, ikke lete etter den på nytt
+   hver gang statusen endrer seg. Ulovlige overganger står igjen som tomme
+   ruter — de er ikke klikkbare, men de holder plassen.
+
+   FLYT er fortsatt fasit: bare det som står der blir en ekte knapp, sa UI-et
+   kan aldri foreslå en overgang serveren vil avvise. #}
 {% macro handlinger(o) -%}
-  {% for neste in flyt[o.status] %}
-  <form method="post" action="/admin/ordre/{{ o.id }}/status" class="inline">
-    <input type="hidden" name="ny" value="{{ neste }}">
-    <button type="submit" class="knapp {% if loop.first %}primar{% endif %}">{{ statusnavn[neste] }}</button>
-  </form>
-  {% endfor %}
-  <form method="post" action="/admin/ordre/{{ o.id }}/betalt" class="inline">
-    <input type="hidden" name="betalt" value="{{ 0 if o.betalt else 1 }}">
-    <button type="submit" class="knapp">{{ "Ikke betalt likevel" if o.betalt else "Marker betalt" }}</button>
-  </form>
-  <form method="post" action="/admin/ordre/{{ o.id }}/skriv-ut" class="inline">
-    <button type="submit" class="knapp">Skriv ut igjen</button>
-  </form>
-  {# To trinn, ikke en dialogboks: forste trykk spor, andre sletter. En
-     dialog midt i et rush er verre enn et trykk til. #}
-  <form method="post" action="/admin/ordre/{{ o.id }}/slett" class="inline">
-    <button type="submit" class="knapp slett" data-sporsmal="Slett {{ o.dagsnummer }}?"
-            aria-label="Slett bestilling {{ o.dagsnummer }} for godt">
-      <svg class="ikon" aria-hidden="true"><use href="#soppel"></use></svg>
-      <span class="ord">Slett</span>
-    </button>
-  </form>
+  {% set steg = ("ny", "i_produksjon", "klar", "levert", "forlatt", "avbrutt") %}
+  {% set lovlige = flyt[o.status] %}
+
+  <div class="stegrad">
+    {% for s in steg %}
+      {% if s in lovlige %}
+      <form method="post" action="/admin/ordre/{{ o.id }}/status" class="inline">
+        <input type="hidden" name="ny" value="{{ s }}">
+        <button type="submit" class="knapp steg {% if s == lovlige[0] %}primar{% endif %}">{{ statusnavn[s] }}</button>
+      </form>
+      {% else %}
+      <span class="knapp steg av {% if s == o.status %}naa{% endif %}"
+            aria-hidden="true">{{ statusnavn[s] }}</span>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="verktoyrad">
+    <form method="post" action="/admin/ordre/{{ o.id }}/betalt" class="inline">
+      <input type="hidden" name="betalt" value="{{ 0 if o.betalt else 1 }}">
+      <button type="submit" class="knapp">{{ "Ikke betalt likevel" if o.betalt else "Marker betalt" }}</button>
+    </form>
+    <form method="post" action="/admin/ordre/{{ o.id }}/skriv-ut" class="inline">
+      <button type="submit" class="knapp">Skriv ut igjen</button>
+    </form>
+    {# To trinn, ikke en dialogboks: forste trykk spor, andre sletter. En
+       dialog midt i et rush er verre enn et trykk til. #}
+    <form method="post" action="/admin/ordre/{{ o.id }}/slett" class="inline">
+      <button type="submit" class="knapp slett" data-sporsmal="Slett {{ o.dagsnummer }}?"
+              aria-label="Slett bestilling {{ o.dagsnummer }} for godt">
+        <svg class="ikon" aria-hidden="true"><use href="#soppel"></use></svg>
+        <span class="ord">Slett</span>
+      </button>
+    </form>
+  </div>
 {%- endmacro %}
 
 {% macro varelinje(rad) -%}
