@@ -132,54 +132,6 @@
 
   </form>
 
-  {# Slik finner du oss: tre ekte bilder framfor et kart.
-
-     Et kart svarer paa «hvor er Tyholtveien 25», som ingen sliter med.
-     Bildene svarer paa «hvilket hus» og «hvor gaar jeg inn» — det er der folk
-     faktisk stopper opp. Nummereringen er ekte: det er rekkefolgen du gaar i,
-     ikke pynt. #}
-  <section class="finn-oss" id="finn-oss">
-    <h2>Slik finner du oss</h2>
-    <p class="stemme ingress">Det store gule trehuset i Tyholtveien. Vi står i bakgården.</p>
-
-    <ol class="veien">
-      <li class="steg">
-        <img src="/static/bilder/finn-1-huset.jpg?v={{ statiskversjon }}"
-             width="1100" height="508" loading="lazy" decoding="async"
-             alt="Stort gult trehus i to etasjer med buet gavl, sett fra Tyholtveien over en hekk.">
-        <div class="steg-tekst">
-          <h3><span class="tall" aria-hidden="true">1</span> Det gule huset</h3>
-          <p>Tyholtveien 25. Gult trehus med buet gavl på taket — det er ikke til å ta feil av.</p>
-        </div>
-      </li>
-
-      <li class="steg">
-        <img src="/static/bilder/finn-2-hjornet.jpg?v={{ statiskversjon }}"
-             width="1100" height="557" loading="lazy" decoding="async"
-             alt="Gavlveggen på det gule huset sett fra gangfeltet, med et lite pizzaskilt i hekken.">
-        <div class="steg-tekst">
-          <h3><span class="tall" aria-hidden="true">2</span> Rundt hjørnet</h3>
-          <p>Følg hekken forbi gangfeltet. Et lite pizzaskilt viser hvor du skal inn.</p>
-        </div>
-      </li>
-
-      <li class="steg">
-        <img src="/static/bilder/finn-3-stien.jpg?v={{ statiskversjon }}"
-             width="739" height="924" loading="lazy" decoding="async"
-             alt="Sti opp gjennom hekken til bakgården, med et bord og to skilt øverst.">
-        <div class="steg-tekst">
-          <h3><span class="tall" aria-hidden="true">3</span> Opp stien</h3>
-          <p>Stien går opp til bakgården. Bordet med skiltet står øverst, og der er vi.</p>
-        </div>
-      </li>
-    </ol>
-
-    <p class="veien-slutt">
-      {# Adressa staar i steg 1 og i bunnen. Her trengs bare handlinga. #}
-      <a class="knapp primar" href="https://maps.google.com/?q=Tyholtveien+25,+7052+Trondheim">Åpne i kart</a>
-    </p>
-  </section>
-
   <footer class="bunn">
     <p class="slagord">Fordi vi elsker pizza &lt;3</p>
     <div class="kontakt">

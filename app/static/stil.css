@@ -510,48 +510,6 @@ small { display: block; margin-top: .4rem; font-size: .875rem; color: var(--blek
 .bunn .kontakt a { text-decoration: none; }
 .bunn .adresse { align-self: center; padding-bottom: 2px; border-bottom: 1px solid rgba(30, 20, 14, .25); color: var(--blekk); }
 
-/* ── Kundesida: slik finner du oss ────────────────────────────────────── */
-
-/* Tre ekte bilder framfor et kart. Et kart svarer paa «hvor er Tyholtveien
-   25», som ingen sliter med. Bildene svarer paa «hvilket hus» og «hvor gaar
-   jeg inn» — det er der folk faktisk stopper opp. Kortene laaner formen fra
-   .menyrett med vilje: sida skal ha ett visuelt spraak, ikke to. */
-
-.finn-oss { margin-top: 3.25rem; }
-.finn-oss > h2 { margin-bottom: .35rem; font-size: 2.5rem; font-variation-settings: "opsz" 96, "SOFT" 100; }
-.finn-oss .ingress { margin: 0 0 1.5rem; }
-
-.veien { display: flex; flex-direction: column; gap: 1.15rem; margin: 0; padding: 0; list-style: none; }
-
-.steg {
-  overflow: hidden;
-  border: 1px solid var(--linje);
-  border-radius: 18px;
-  background: var(--papir);
-}
-
-/* height: auto er ikke pynt. `img { max-width: 100% }` lenger oppe kapper
-   bredden til spalta, mens width/height-attributtene paa taggen fortsatt
-   holder pa hoyden — uten denne linja blir bildene klemt flate. */
-.steg img {
-  display: block;
-  width: 100%;
-  height: auto;
-  background: var(--papir-varm);
-}
-
-.steg-tekst { padding: 1.05rem 1.25rem 1.25rem; }
-.steg-tekst h3 { display: flex; align-items: baseline; gap: .55rem; margin-bottom: .4rem; line-height: 1.1; }
-.steg-tekst h3 .tall {
-  flex: none;
-  font-style: italic;
-  color: var(--tomat);
-  font-variation-settings: "opsz" 48, "SOFT" 100;
-}
-.steg-tekst p { margin: 0; color: var(--blekk-mild); line-height: 1.5; }
-
-.veien-slutt { margin: 1.35rem 0 0; text-align: center; }
-
 /* ── Kvittering ───────────────────────────────────────────────────────── */
 
 .kvittering-side { padding-top: 2.75rem; }
