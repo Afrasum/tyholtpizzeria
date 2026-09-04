@@ -1070,6 +1070,3 @@ body.skjerm { background: var(--mork); color: var(--papir); }
 .skjulte .nr { font-family: var(--mono); font-weight: 700; font-size: 1.25rem; color: var(--blekk); }
 .skjulte .navn { flex: 1; font-family: var(--skilt); font-variation-settings: "opsz" 24; }
 .skjulte .status { font-size: .875rem; }
-
-.testrad { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
-.testrad .knapp { width: 100%; }

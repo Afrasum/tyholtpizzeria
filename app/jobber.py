@@ -114,11 +114,6 @@ def handter_feil(rad, jobbtype: str, e: BaseException) -> None:
 
 
 def _utfor_etikett(nyttelast: dict) -> None:
-    # Diagnosestripa gaar gjennom etikettkoen med vilje: samme trad, samme
-    # serieport, samme feilhandtering som en ekte etikett.
-    if nyttelast.get("monster") == "svart":
-        printer.skriv_ut_stripe(nyttelast.get("mm", 40))
-        return
     printer.skriv_ut(
         nummer=nyttelast["nummer"],
         etiketter=nyttelast["etiketter"],
@@ -221,43 +216,6 @@ def feilede() -> list:
                 """
             )
         )
-
-
-def koe_test(monster: str = "etikett") -> int:
-    """Legg en testutskrift i koen, uten a lage en ordre.
-
-    To monstre:
-
-      «etikett» - en vanlig etikett med kode, nummer, navn, teller og QR.
-                  Svarer pa «ser en ekte etikett riktig ut?»
-      «svart»   - en heldekkende svart stripe pa 40 mm, ingen tekst.
-                  Svarer pa «klarer skrivehodet a merke tapen i det hele
-                  tatt?» Kommer den ut blank, er feilen i maskinen og ikke
-                  i koden.
-
-    ordre_id er NULL, sa raden henger ikke ved noen bestilling og teller
-    ikke med i kveldens tall.
-    """
-    if monster == "svart":
-        nyttelast = {"ordre_id": None, "monster": "svart", "mm": 40}
-    else:
-        nyttelast = {
-            "ordre_id": None,
-            "nummer": 88,
-            "kundenavn": "Testesen",
-            "etiketter": [
-                {"tekst": "Margherita", "indeks": 1, "av": 2},
-                {"tekst": "Skinke", "indeks": 2, "av": 2},
-            ],
-        }
-    with transaksjon() as kob:
-        tid = naa()
-        markor = kob.execute(
-            "INSERT INTO jobb (type, nyttelast, status, ordre_id, opprettet,"
-            " oppdatert) VALUES ('etikett', ?, 'ny', NULL, ?, ?)",
-            (json.dumps(nyttelast, ensure_ascii=False), tid, tid),
-        )
-        return int(markor.lastrowid)
 
 
 def koe_paa_nytt(jobb_id: int) -> bool:

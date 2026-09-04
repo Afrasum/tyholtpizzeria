@@ -61,21 +61,7 @@
         {% for type, tilstander in kostatus.items() %}{{ type }}:
         {% for tilstand, n in tilstander.items() %}{{ n }} {{ tilstand }}{% if not loop.last %}, {% endif %}{% endfor %}{% if not loop.last %} · {% endif %}{% endfor %}
       </p>
-      {% if test %}<p class="naa">Testutskrift lagt i køen.</p>{% endif %}
-      {# Svart stripe svarer på om skrivehodet merker tapen i det hele tatt.
-         Blank stripe = maskinen, ikke koden. #}
-      <div class="testrad">
-        <form method="post" action="/admin/testprint" class="inline">
-          <input type="hidden" name="monster" value="etikett">
-          <button type="submit" class="knapp">Testetikett</button>
-        </form>
-        <form method="post" action="/admin/testprint" class="inline">
-          <input type="hidden" name="monster" value="svart">
-          <button type="submit" class="knapp">Svart stripe</button>
-        </form>
-      </div>
-      <small>Låser den seg: skru den av og på. Køen skriver seg ut selv.
-        Kommer den svarte stripa ut blank, er det maskinen og ikke koden.</small>
+      <small>Låser den seg: skru den av og på. Køen skriver seg ut selv.</small>
     </div>
 
     <div class="styringsboks">

@@ -264,20 +264,6 @@ class Printer:
             _last_vendor()
             data = _encode.read_png(str(png))
 
-        self._send_png(png_data=data)
-
-        logg.info(
-            "strimmel printet: nr %s, %s etikett(er): %s",
-            nummer, len(etiketter), ", ".join(e["tekst"] for e in etiketter),
-        )
-
-    def _send_png(self, png_data: bytes) -> None:
-        """Send ferdig rasterisert bildedata til printeren.
-
-        Skilt ut fra skriv_ut sa diagnosestripa gar NOYAKTIG samme vei som en
-        ekte etikett - samme oppsett, samme overforing, samme drenering.
-        """
-        data = png_data
         with self._laas:
             try:
                 ser = self._apne()
@@ -308,18 +294,10 @@ class Printer:
                 self._lukk()
                 raise PrinterFeil(f"{type(e).__name__}: {e}") from e
 
-    def skriv_ut_stripe(self, mm: int = 40) -> None:
-        """Print en heldekkende svart stripe. Se etikett.render_svart_stripe."""
-        if not tilgjengelig():
-            raise PrinterFeil("Printing er ikke satt opp.")
-        import tempfile  # noqa: PLC0415
-
-        with tempfile.TemporaryDirectory(prefix="tyholt-stripe-") as katalog:
-            png = etikett.render_svart_stripe(Path(katalog) / "stripe.png", mm)
-            _last_vendor()
-            data = _encode.read_png(str(png))
-        self._send_png(png_data=data)
-        logg.info("svart teststripe printet: %s mm", mm)
+        logg.info(
+            "strimmel printet: nr %s, %s etikett(er): %s",
+            nummer, len(etiketter), ", ".join(e["tekst"] for e in etiketter),
+        )
 
 
 printer = Printer()
@@ -327,10 +305,6 @@ printer = Printer()
 
 def skriv_ut(nummer: int, etiketter: list[dict], kundenavn: str = "") -> None:
     printer.skriv_ut(nummer, etiketter, kundenavn)
-
-
-def skriv_ut_stripe(mm: int = 40) -> None:
-    printer.skriv_ut_stripe(mm)
 
 
 def status() -> dict:
