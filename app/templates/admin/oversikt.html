@@ -85,18 +85,43 @@
         passordet, verten eller avsenderadressen som er feil.</small>
     </div>
 
-    <div class="styringsboks farlig">
+    {# To knapper som gjor to helt ulike ting, og som derfor ikke ser like ut.
+       Den ene rydder skjermen, den andre tommer basen. Forvirring mellom dem
+       er nettopp det denne oppdelingen finnes for a hindre. #}
+    <div class="styringsboks">
       <h3>Nullstill dagen</h3>
-      {% if slettet is not none %}<p class="naa">{{ slettet }} ordrer slettet.</p>{% endif %}
-      {% if nullstill_avvist %}<p class="naa">Skriv SLETT for å bekrefte.</p>{% endif %}
+      {% if ryddet is not none %}<p class="naa">{{ ryddet }} bestillinger tatt ut av lista.</p>{% endif %}
+      <p>Tømmer lista og tavla, så dere begynner på blank flate.</p>
       <form method="post" action="/admin/nullstill">
+        <button type="submit" class="knapp"
+                data-bekreft="Alle bestillinger tas ut av lista og av tavla. Ingenting slettes — hver enkelt kan hentes tilbake under «Skjulte».">
+          Tøm lista
+        </button>
+      </form>
+      <small>Sletter ingenting. Alt ligger i basen, og hver bestilling kan
+        hentes tilbake fra «Skjulte» under ordrelista.</small>
+    </div>
+
+    <div class="styringsboks farlig">
+      <h3>Slett databasen</h3>
+      {% if slettalt == "avvist" %}<p class="naa">Skriv SLETT ALT for å bekrefte.</p>{% endif %}
+      {% if slettalt == "feil" %}<p class="naa">Fikk ikke tatt sikkerhetskopi, så ingenting ble slettet: {{ kopi }}</p>{% endif %}
+      {% if slettalt and slettalt not in ("avvist", "feil") %}
+        <p class="naa">{{ slettalt }} bestillinger slettet. Kopi: <span class="mono">{{ kopi }}</span></p>
+      {% endif %}
+      <p>Fjerner hver eneste bestilling for godt, og starter nummereringen forfra.</p>
+      <form method="post" action="/admin/slett-alt">
         <label>
-          <span class="navn-paa-felt">Skriv SLETT</span>
+          <span class="navn-paa-felt">Skriv SLETT ALT</span>
           <input type="text" name="bekreft" autocomplete="off">
         </label>
-        <button type="submit" class="knapp fare">Slett dagens ordrer</button>
+        <button type="submit" class="knapp fare"
+                data-bekreft="Hver eneste bestilling slettes for godt fra databasen, og nummereringen starter forfra. Det tas sikkerhetskopi først. Dette kan ikke angres fra admin.">
+          Slett alt for godt
+        </button>
       </form>
-      <small>Til opprydding etter prøvebestillinger. Backup tas hvert minutt.</small>
+      <small>Tar sikkerhetskopi først og viser filnavnet. Meny, allergener og
+        Vipps-mottakere røres ikke.</small>
     </div>
 
     <div class="styringsboks vipps-boks">
@@ -145,7 +170,7 @@
   <p id="bekreft-tekst"></p>
   <div class="bekreft-knapper">
     <button type="button" class="knapp" id="bekreft-nei">Avbryt</button>
-    <button type="button" class="knapp fare" id="bekreft-ja">Slett permanent</button>
+    <button type="button" class="knapp fare" id="bekreft-ja">Ja, gjør det</button>
   </div>
 </dialog>
 {% endblock %}

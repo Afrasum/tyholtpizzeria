@@ -506,27 +506,65 @@ def slett_ordre(ordre_id: int) -> bool:
         ).rowcount > 0
 
 
-def slett_dagens_ordrer(salgsdag_id: int) -> int:
-    """Slett alle ordrer for en salgsdag. Returnerer antall slettede.
+def skjul_alle(salgsdag_id: int) -> int:
+    """Tom lista for en salgsdag. Sletter INGENTING.
 
-    Finnes for å rydde etter lasttesting og prøvebestillinger. Linjer,
-    statuslogg og jobber følger med via ON DELETE CASCADE.
+    «Nullstill dagen»: alle ordrer merkes skjult, sa admin og tavla er blanke
+    og en ny kveld kan begynne pa en ren flate. Radene ligger i basen, og hver
+    enkelt kan hentes tilbake fra angrelista.
 
-    Destruktivt med vilje uten angremulighet — men backup-timeren tar en kopi
-    hvert minutt, så veien tilbake er å pakke ut siste fil fra
-    ~/data/tyholtpizzeria/backup/.
+    Telleren gaar videre. Den kan ikke stilles tilbake sa lenge radene ligger
+    der og okkuperer numrene sine - og det spiller ingen rolle, siden vi aldri
+    kommer i naerheten av 999 pa en kveld.
     """
     with transaksjon() as kob:
-        antall = kob.execute(
-            "SELECT COUNT(*) AS n FROM ordre WHERE salgsdag_id = ?", (salgsdag_id,)
-        ).fetchone()["n"]
-        kob.execute("DELETE FROM ordre WHERE salgsdag_id = ?", (salgsdag_id,))
-        # Nullstilling betyr hele dagen om igjen, telleren inkludert — dette
-        # er knappen man bruker FOR service, ikke under. Aa slette EN ordre
-        # (slett_ordre) rorer bevisst ikke telleren.
+        tid = naa()
+        ider = [
+            r["id"]
+            for r in kob.execute(
+                "SELECT id FROM ordre WHERE salgsdag_id = ? AND skjult = 0",
+                (salgsdag_id,),
+            )
+        ]
+        if not ider:
+            return 0
+        plass = ",".join("?" * len(ider))
         kob.execute(
-            "UPDATE salgsdag SET sistenummer = 0 WHERE id = ?", (salgsdag_id,)
+            f"UPDATE ordre SET skjult = 1, oppdatert = ? WHERE id IN ({plass})",
+            (tid, *ider),
         )
+        # Samme grunn som i skjul_ordre: en ordre som er tatt av flata skal
+        # ikke spytte ut en etikett to minutter senere.
+        kob.execute(
+            f"UPDATE jobb SET status = 'feilet', siste_feil = 'ordren ble fjernet',"
+            f" oppdatert = ? WHERE status = 'ny' AND ordre_id IN ({plass})",
+            (tid, *ider),
+        )
+        kob.executemany(
+            "INSERT INTO statuslogg (ordre_id, fra_status, til_status, aktor,"
+            " opprettet) VALUES (?, NULL, 'skjult', 'admin', ?)",
+            [(i, tid) for i in ider],
+        )
+        return len(ider)
+
+
+def slett_alt() -> int:
+    """Slett hver eneste ordre i basen og still telleren tilbake.
+
+    «Slett databasen»: dette er knappen for a begynne pa nytt pa ordentlig.
+    Linjer, statuslogg og jobber folger med via ON DELETE CASCADE, og
+    sistenummer nullstilles pa alle salgsdager sa nummereringen starter forfra.
+
+    Rorer IKKE meny, allergener, Vipps-mottakere eller innstillinger - det er
+    oppsettet, ikke kveldens data.
+
+    Kalleren tar sikkerhetskopi forst (se routes/admin.py). Uten den er dette
+    den ene handlingen i systemet som ikke har noen vei tilbake.
+    """
+    with transaksjon() as kob:
+        antall = kob.execute("SELECT COUNT(*) AS n FROM ordre").fetchone()["n"]
+        kob.execute("DELETE FROM ordre")
+        kob.execute("UPDATE salgsdag SET sistenummer = 0")
         return int(antall)
 
 

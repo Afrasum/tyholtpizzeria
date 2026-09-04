@@ -18,7 +18,7 @@ from urllib.parse import quote
 from .. import (
     allergener, auth, config, epost, innstillinger, jobber, meny, ordrer, printer,
 )
-from ..db import kobling
+from ..db import kobling, sikkerhetskopi as db_sikkerhetskopi
 from ..maler import maler
 
 ruter = APIRouter(prefix="/admin")
@@ -101,8 +101,9 @@ def rader(request: Request, _=Depends(auth.krev)):
 @ruter.get("", response_class=HTMLResponse)
 def oversikt(
     request: Request,
-    slettet: int | None = None,
-    nullstill: str = "",
+    ryddet: int | None = None,
+    slettalt: str = "",
+    kopi: str = "",
     vipps: str = "",
     eposttest: str = "",
     epostmelding: str = "",
@@ -124,8 +125,9 @@ def oversikt(
                 "solgt": ordrer.solgte_pizzaer(kob),
                 "kostatus": jobber.kostatus(),
                 "uverifiserte": allergener.uverifiserte_ingredienser(kob),
-                "slettet": slettet,
-                "nullstill_avvist": nullstill == "avvist",
+                "ryddet": ryddet,
+                "slettalt": slettalt,
+                "kopi": kopi,
                 "mottakere": innstillinger.mottakere(kob),
                 "aktiv_mottaker": innstillinger.aktiv_mottaker(kob),
                 "vipps_ugyldig": vipps == "ugyldig",
@@ -285,20 +287,37 @@ def ny_vipps(
 
 
 @ruter.post("/nullstill")
-def nullstill(bekreft: str = Form(""), _=Depends(auth.krev)):
-    """Slett alle ordrer for gjeldende salgsdag.
-
-    Krever at ordet SLETT skrives inn. Ingen nettleserdialog — de blokkerer
-    hele fanen, og da mister vi kontakten med siden.
-    """
-    if bekreft.strip().upper() != "SLETT":
-        return RedirectResponse("/admin?nullstill=avvist", status_code=303)
+def nullstill(_=Depends(auth.krev)):
+    """Tom lista. Sletter ingenting — alt kan hentes tilbake fra angrelista."""
     with kobling() as kob:
         dag = ordrer.gjeldende_salgsdag(kob)
     if dag is None:
         return RedirectResponse("/admin", status_code=303)
-    antall = ordrer.slett_dagens_ordrer(dag["id"])
-    return RedirectResponse(f"/admin?slettet={antall}", status_code=303)
+    antall = ordrer.skjul_alle(dag["id"])
+    return RedirectResponse(f"/admin?ryddet={antall}", status_code=303)
+
+
+@ruter.post("/slett-alt")
+def slett_alt(bekreft: str = Form(""), _=Depends(auth.krev)):
+    """Tom hele basen for ordrer. Tar sikkerhetskopi FORST.
+
+    Krever at ordene SLETT ALT skrives inn, i tillegg til bekreftelsesdialogen
+    i UI-et. Dette er den ene handlingen som ikke kan angres, sa kopien er ikke
+    valgfri: filnavnet vises etterpa, slik at veien tilbake er konkret og ikke
+    en teori om at backup-timeren nok gjorde jobben sin.
+    """
+    if bekreft.strip().upper() != "SLETT ALT":
+        return RedirectResponse("/admin?slettalt=avvist", status_code=303)
+    try:
+        kopi = db_sikkerhetskopi().name
+    except Exception as e:  # noqa: BLE001 — uten kopi sletter vi ingenting
+        return RedirectResponse(
+            f"/admin?slettalt=feil&kopi={quote(str(e)[:200])}", status_code=303
+        )
+    antall = ordrer.slett_alt()
+    return RedirectResponse(
+        f"/admin?slettalt={antall}&kopi={quote(kopi)}", status_code=303
+    )
 
 
 @ruter.post("/epost-test")

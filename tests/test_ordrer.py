@@ -351,8 +351,8 @@ def test_nummeret_er_delt_paa_tvers_av_pizzatyper(tmp_path, monkeypatch):
     assert sorted((e["indeks"], e["av"]) for e in last["etiketter"]) == [(1, 2), (2, 2)]
 
 
-def test_nullstilling_sletter_ordrer_linjer_og_jobber(tmp_path, monkeypatch):
-    """Opprydding etter lasttesting skal ikke etterlate loese jobber."""
+def test_slett_alt_tommer_basen_og_stiller_telleren_tilbake(tmp_path, monkeypatch):
+    """«Slett databasen» skal ikke etterlate loese linjer eller jobber."""
     db = _oppsett(tmp_path, monkeypatch)
     _tving_apent(db)
     from app import ordrer
@@ -367,7 +367,7 @@ def test_nullstilling_sletter_ordrer_linjer_og_jobber(tmp_path, monkeypatch):
         assert kob.execute("SELECT COUNT(*) c FROM ordrelinje").fetchone()["c"] == 3
         assert kob.execute("SELECT COUNT(*) c FROM jobb").fetchone()["c"] == 6
 
-    assert ordrer.slett_dagens_ordrer(dag["id"]) == 3
+    assert ordrer.slett_alt() == 3
 
     with db.kobling() as kob:
         for tabell in ("ordre", "ordrelinje", "jobb", "statuslogg"):
@@ -640,3 +640,53 @@ def test_for_admin_gir_eldste_ordre_forst(tmp_path, monkeypatch):
 
     with db.kobling() as kob:
         assert [r["ordre"]["dagsnummer"] for r in ordrer.for_admin(kob)] == numre
+
+
+def test_nullstill_dagen_tommer_lista_uten_a_slette_noe(tmp_path, monkeypatch):
+    """Den andre knappen: blank flate, men alt ligger der og kan hentes tilbake."""
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    from app import jobber, ordrer
+    from app.ordrer import Onske, opprett
+
+    eid = _meny_id(db, "margherita")
+    for navn in ("A", "B", "C"):
+        opprett(navn, None, [Onske(eid, 1)])
+    sist = opprett("Siste", None, [Onske(eid, 1)])
+    ordrer.sett_status(sist["ordre_id"], "i_produksjon")
+    ordrer.sett_status(sist["ordre_id"], "klar")
+
+    with db.kobling() as kob:
+        dag = ordrer.gjeldende_salgsdag(kob)
+        assert len(ordrer.for_admin(kob)) == 4
+        assert ordrer.klare_numre(kob) == [sist["nummer"]]
+
+    assert ordrer.skjul_alle(dag["id"]) == 4
+    assert ordrer.skjul_alle(dag["id"]) == 0, "andre trykk finner ingenting igjen"
+
+    with db.kobling() as kob:
+        # Blank flate ...
+        assert ordrer.for_admin(kob) == []
+        assert ordrer.klare_numre(kob) == []
+        # ... men ingenting er borte.
+        assert kob.execute("SELECT COUNT(*) c FROM ordre").fetchone()["c"] == 4
+        assert kob.execute("SELECT COUNT(*) c FROM ordrelinje").fetchone()["c"] == 4
+        assert len(ordrer.skjulte_for_admin(kob)) == 4
+        assert ordrer.solgte_pizzaer(kob) == 4, "salgstallet staar"
+
+    # Ingen etikett skal komme ut av en ordre som nettopp ble ryddet vekk ...
+    with db.kobling() as kob:
+        ventende = kob.execute(
+            "SELECT COUNT(*) c FROM jobb WHERE status = 'ny'"
+        ).fetchone()["c"]
+    assert ventende == 0, "koen skulle vaert toemt"
+    # ... og den skal heller ikke mase i feilbanneret etterpa.
+    assert jobber.feilede() == []
+
+    # Og en enkelt kan hentes tilbake.
+    ordrer.skjul_ordre(sist["ordre_id"], skjult=False)
+    with db.kobling() as kob:
+        assert [r["ordre"]["dagsnummer"] for r in ordrer.for_admin(kob)] == [
+            sist["nummer"]
+        ]
+        assert ordrer.klare_numre(kob) == [sist["nummer"]]

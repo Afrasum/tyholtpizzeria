@@ -7,6 +7,8 @@ de i trådpoolen og stopper ikke hendelsesløkken.
 
 from __future__ import annotations
 
+import gzip
+import shutil
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
@@ -90,3 +92,33 @@ def klargjor() -> None:
                 kob.execute(f"ALTER TABLE {tabell} ADD COLUMN {kolonne} {type_}")
     finally:
         kob.close()
+
+
+def sikkerhetskopi() -> Path:
+    """Gzippet kopi av basen, na. Returnerer fila som ble skrevet.
+
+    Samme katalog og samme navnemonster som deploy/backup.sh, sa de to
+    blander seg med hverandre i kronologisk rekkefolge og ryddes av samme
+    regel. Brukes for «Slett databasen» i admin: den knappen skal aldri kunne
+    tas uten at det finnes en vei tilbake fra sekundet for.
+
+    .backup() framfor en filkopi: en ren kopi kan fange en halvskrevet WAL.
+    """
+    katalog = config.DB_STI.parent / "backup"
+    katalog.mkdir(parents=True, exist_ok=True)
+    stempel = datetime.now(config.TIDSSONE).strftime("%Y%m%d-%H%M%S")
+    raa = katalog / f"base-{stempel}.db"
+
+    kilde = sqlite3.connect(f"file:{config.DB_STI}?mode=ro", uri=True)
+    mal = sqlite3.connect(raa)
+    try:
+        kilde.backup(mal)
+    finally:
+        mal.close()
+        kilde.close()
+
+    pakket = raa.with_suffix(".db.gz")
+    with raa.open("rb") as inn, gzip.open(pakket, "wb") as ut:
+        shutil.copyfileobj(inn, ut)
+    raa.unlink()
+    return pakket
