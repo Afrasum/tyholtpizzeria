@@ -489,6 +489,23 @@ def skjul_ordre(ordre_id: int, skjult: bool = True) -> bool:
         return endret
 
 
+def slett_ordre(ordre_id: int) -> bool:
+    """Slett en ordre for godt. Ingen vei tilbake utenom backupen.
+
+    Skiller seg fra skjul_ordre ved at raden faktisk forsvinner: linjer,
+    statuslogg og jobber folger med via ON DELETE CASCADE. Til bestillinger som
+    aldri skulle eksistert - provetrykk, dobbeltregistreringer - der det er
+    feil at de teller med naar kvelden gjores opp.
+
+    sistenummer roeres IKKE. Nummeret til en slettet ordre skal aldri deles ut
+    pa nytt samme kveld, ellers kan to esker baere samme tall.
+    """
+    with transaksjon() as kob:
+        return kob.execute(
+            "DELETE FROM ordre WHERE id = ?", (ordre_id,)
+        ).rowcount > 0
+
+
 def slett_dagens_ordrer(salgsdag_id: int) -> int:
     """Slett alle ordrer for en salgsdag. Returnerer antall slettede.
 
@@ -533,7 +550,12 @@ def for_admin(
     salgsdag_id: int | None = None,
     tid: datetime | None = None,
 ) -> list[dict]:
-    """Alle ordrer for admin-tabellen, nyeste først, med linjer og printstatus."""
+    """Alle synlige ordrer for admin, ELDSTE forst, med linjer og printstatus.
+
+    Rekkefolgen er ikke smak. Med nyeste oeverst skjot hver nye bestilling alle
+    radene ett hakk ned, og et trykk som var pa vei mot «Klar til henting» pa
+    nummer 48 landet pa nummer 49. Nederst legger de seg uten a flytte noe.
+    """
     if salgsdag_id is None:
         dag = gjeldende_salgsdag(kob, tid)
         salgsdag_id = dag["id"] if dag else None
@@ -543,7 +565,7 @@ def for_admin(
     ordrer = list(
         kob.execute(
             "SELECT * FROM ordre WHERE salgsdag_id = ? AND skjult = 0"
-            " ORDER BY dagsnummer DESC",
+            " ORDER BY dagsnummer ASC",
             (salgsdag_id,),
         )
     )
@@ -567,6 +589,58 @@ def for_admin(
         ).fetchone()
         ut.append({"ordre": ordre, "linjer": linjer, "print": print_status})
     return ut
+
+
+def skjulte_for_admin(
+    kob: sqlite3.Connection,
+    salgsdag_id: int | None = None,
+    tid: datetime | None = None,
+) -> list[dict]:
+    """De skjulte ordrene, til angrelista i admin.
+
+    Finnes fordi kryss-knappen er ETT trykk uten bekreftelse. Det er den bare
+    trygt aa gjoere naar veien tilbake staar rett under lista.
+    """
+    if salgsdag_id is None:
+        dag = gjeldende_salgsdag(kob, tid)
+        salgsdag_id = dag["id"] if dag else None
+    if salgsdag_id is None:
+        return []
+    return [
+        {"ordre": o}
+        for o in kob.execute(
+            "SELECT * FROM ordre WHERE salgsdag_id = ? AND skjult = 1"
+            " ORDER BY dagsnummer ASC",
+            (salgsdag_id,),
+        )
+    ]
+
+
+def solgte_pizzaer(
+    kob: sqlite3.Connection,
+    salgsdag_id: int | None = None,
+    tid: datetime | None = None,
+) -> int:
+    """Antall pizzaer solgt i dag — skjulte ordrer TELLER MED.
+
+    Summeres ikke over admin-tabellen, for den utelater de skjulte. Gjorde vi
+    det, ville tellinga gatt nedover mot null etter hvert som leverte ordrer
+    ble ryddet vekk i lopet av kvelden.
+    """
+    if salgsdag_id is None:
+        dag = gjeldende_salgsdag(kob, tid)
+        salgsdag_id = dag["id"] if dag else None
+    if salgsdag_id is None:
+        return 0
+    rad = kob.execute(
+        """
+        SELECT COALESCE(SUM(l.antall), 0) AS n
+        FROM ordrelinje l JOIN ordre o ON o.id = l.ordre_id
+        WHERE o.salgsdag_id = ? AND o.status != 'avbrutt'
+        """,
+        (salgsdag_id,),
+    ).fetchone()
+    return int(rad["n"])
 
 
 def klare_numre(

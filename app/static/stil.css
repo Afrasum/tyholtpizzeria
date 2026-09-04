@@ -151,15 +151,6 @@ h3 { font-size: 1.5rem; font-variation-settings: "opsz" 48; }
 
 .knapp .ikon { width: 1.15em; height: 1.15em; flex: 0 0 auto; }
 
-/* Slett er siste utvei, ikke en snarvei: dempet til den er armert. */
-.knapp.slett { color: var(--blekk-mild); }
-.knapp.slett:hover { border-color: var(--tomat); color: var(--tomat); }
-.knapp.slett.bevaepnet {
-  border-color: transparent;
-  background: var(--tomat);
-  color: var(--papir);
-}
-
 .knapp[disabled] {
   background: var(--blekk-svak);
   border-color: transparent;
@@ -773,8 +764,11 @@ main.admin { max-width: 100rem; padding-top: 2rem; }
 /* Fast 2x3-tastatur. Rutene ligger i samme rekkefølge uansett hvilken status
    ordren har, sa hånda lærer hvor «Klar til henting» er framfor å lete etter
    den på nytt hver gang lista tegnes om. */
-.stegrad,
-.verktoyrad { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.stegrad { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+
+/* Fire verktoy, to og to pa mobil. Krysset og soppelboetta star ved siden av
+   hverandre og ma vaere lette a skille: det ene rydder, det andre sletter. */
+.verktoyrad { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
 
 .knapp.steg { min-height: 50px; padding: .5rem .55rem; font-size: .9rem; text-align: center; }
 .knapp.steg.primar { min-height: 50px; font-size: 1.05rem; }
@@ -926,8 +920,8 @@ main.admin { max-width: 100rem; padding-top: 2rem; }
   .ordretabell .etikett-feil { display: block; margin-top: .25rem; color: var(--tomat); font-size: .85rem; }
   .ordretabell .ordre.gammel { background: rgba(198, 58, 42, .07); }
   .ordretabell .handling { padding-top: 0; border-top: none; gap: .4rem; }
-  .ordretabell .stegrad,
-  .ordretabell .verktoyrad { gap: .4rem; }
+  .ordretabell .stegrad { gap: .4rem; }
+  .ordretabell .verktoyrad { grid-template-columns: repeat(4, 1fr); gap: .4rem; }
   .ordretabell .knapp { min-height: 38px; padding: .35rem .7rem; font-size: .85rem; }
   .ordretabell .knapp.steg.primar { min-height: 38px; font-size: .95rem; }
 }
@@ -1032,3 +1026,47 @@ body.skjerm { background: var(--mork); color: var(--papir); }
     transition-duration: .01ms !important;
   }
 }
+
+/* ── Rydde og slette ──────────────────────────────────────────────────── */
+
+/* Krysset rydder — det skal se ufarlig ut, for det er det. */
+.knapp.kryss { color: var(--blekk-mild); }
+.knapp.kryss:hover { border-color: var(--linje-sterk); background: var(--papir-varm); color: var(--blekk); }
+
+/* Soppelboetta sletter for godt. Den skal se ut som det, uten a rope. */
+.knapp.slett { border-color: rgba(198, 58, 42, .45); color: var(--tomat); }
+.knapp.slett:hover { background: var(--tomat); border-color: transparent; color: var(--papir); }
+
+.bekreft {
+  max-width: 26rem;
+  padding: 1.6rem;
+  border: 1px solid var(--linje-sterk);
+  border-radius: var(--rund);
+  background: var(--kvittering);
+  color: var(--blekk);
+}
+.bekreft::backdrop { background: rgba(30, 20, 14, .55); }
+.bekreft h2 { margin: 0 0 .7rem; font-size: 1.5rem; }
+.bekreft p { margin: 0 0 1.4rem; line-height: 1.5; }
+.bekreft-knapper { display: grid; grid-template-columns: 1fr 1fr; gap: .625rem; }
+.bekreft-knapper .knapp { width: 100%; }
+.bekreft-knapper .fare { border-color: transparent; background: var(--tomat); color: var(--papir); }
+.bekreft-knapper .fare:hover { background: var(--tomat-mork); border-color: transparent; color: var(--papir); }
+
+/* Angrelista. Diskret med vilje — den skal finnes, ikke ta plass. */
+.skjulte { margin-top: 1.6rem; }
+.skjulte summary { cursor: pointer; font-size: .95rem; color: var(--blekk-mild); }
+.skjulte ul { display: flex; flex-direction: column; gap: .5rem; margin: .875rem 0 0; padding: 0; list-style: none; }
+.skjulte li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .875rem;
+  padding: .625rem .875rem;
+  border: 1px dashed var(--linje-sterk);
+  border-radius: var(--rund-liten);
+  color: var(--blekk-mild);
+}
+.skjulte .nr { font-family: var(--mono); font-weight: 700; font-size: 1.25rem; color: var(--blekk); }
+.skjulte .navn { flex: 1; font-family: var(--skilt); font-variation-settings: "opsz" 24; }
+.skjulte .status { font-size: .875rem; }

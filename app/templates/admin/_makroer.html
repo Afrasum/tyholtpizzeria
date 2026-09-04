@@ -1,0 +1,66 @@
+{# Makro sa kortene (mobil) og tabellen (PC) alltid tilbyr nøyaktig de samme
+   knappene.
+
+   Alle seks stegene rendres ALLTID, i denne rekkefølgen, som et 2x3-tastatur.
+   Hånda skal lære hvor «Klar til henting» er, ikke lete etter den på nytt
+   hver gang statusen endrer seg. Ulovlige overganger står igjen som tomme
+   ruter — de er ikke klikkbare, men de holder plassen.
+
+   FLYT er fortsatt fasit: bare det som står der blir en ekte knapp, sa UI-et
+   kan aldri foreslå en overgang serveren vil avvise. #}
+{% macro handlinger(o) -%}
+  {% set steg = ("ny", "i_produksjon", "klar", "levert", "forlatt", "avbrutt") %}
+  {% set lovlige = flyt[o.status] %}
+
+  <div class="stegrad">
+    {% for s in steg %}
+      {% if s in lovlige %}
+      <form method="post" action="/admin/ordre/{{ o.id }}/status" class="inline">
+        <input type="hidden" name="ny" value="{{ s }}">
+        <button type="submit" class="knapp steg {% if s == lovlige[0] %}primar{% endif %}">{{ statusnavn[s] }}</button>
+      </form>
+      {% else %}
+      <span class="knapp steg av {% if s == o.status %}naa{% endif %}"
+            aria-hidden="true">{{ statusnavn[s] }}</span>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="verktoyrad">
+    <form method="post" action="/admin/ordre/{{ o.id }}/betalt" class="inline">
+      <input type="hidden" name="betalt" value="{{ 0 if o.betalt else 1 }}">
+      <button type="submit" class="knapp">{{ "Ikke betalt likevel" if o.betalt else "Marker betalt" }}</button>
+    </form>
+    <form method="post" action="/admin/ordre/{{ o.id }}/skriv-ut" class="inline">
+      <button type="submit" class="knapp">Skriv ut igjen</button>
+    </form>
+    {# To knapper, to helt ulike ting.
+
+       Krysset rydder: ordren ut av lista og av tavla, raden blir staaende. Ett
+       trykk uten bekreftelse, fordi «Skjulte» rett under lista henter den
+       tilbake.
+
+       Soppelboetta sletter for godt, og krever bekreftelse i en dialog inne i
+       sida. IKKE window.confirm — den fryser hele fanen. #}
+    <form method="post" action="/admin/ordre/{{ o.id }}/skjul" class="inline">
+      <button type="submit" class="knapp kryss"
+              title="Tar {{ o.dagsnummer }} ut av lista og tavla. Raden blir liggende i basen."
+              aria-label="Fjern bestilling {{ o.dagsnummer }} fra lista">
+        <svg class="ikon" aria-hidden="true"><use href="#kryss"></use></svg>
+        <span class="ord">Fjern</span>
+      </button>
+    </form>
+    <form method="post" action="/admin/ordre/{{ o.id }}/slett-permanent" class="inline">
+      <button type="submit" class="knapp slett"
+              data-bekreft="Bestilling {{ o.dagsnummer }} ({{ o.kundenavn }}) slettes for godt fra databasen. Dette kan ikke angres."
+              aria-label="Slett bestilling {{ o.dagsnummer }} permanent">
+        <svg class="ikon" aria-hidden="true"><use href="#soppel"></use></svg>
+        <span class="ord">Slett</span>
+      </button>
+    </form>
+  </div>
+{%- endmacro %}
+
+{% macro varelinje(rad) -%}
+  {% for l in rad.linjer %}<span class="kode">{{ l.antall }}×{{ l.etikett_snapshot[:1] | upper }}</span> {{ l.navn_snapshot }}{% if not loop.last %}, {% endif %}{% endfor %}
+{%- endmacro %}

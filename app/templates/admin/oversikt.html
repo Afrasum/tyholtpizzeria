@@ -2,61 +2,6 @@
 {% block tittel %}Admin – {{ innst.stedsnavn }}{% endblock %}
 {% block kropp_klasse %}admin{% endblock %}
 
-{# Makro sa kortene (mobil) og tabellen (PC) alltid tilbyr nøyaktig de samme
-   knappene.
-
-   Alle seks stegene rendres ALLTID, i denne rekkefølgen, som et 2x3-tastatur.
-   Hånda skal lære hvor «Klar til henting» er, ikke lete etter den på nytt
-   hver gang statusen endrer seg. Ulovlige overganger står igjen som tomme
-   ruter — de er ikke klikkbare, men de holder plassen.
-
-   FLYT er fortsatt fasit: bare det som står der blir en ekte knapp, sa UI-et
-   kan aldri foreslå en overgang serveren vil avvise. #}
-{% macro handlinger(o) -%}
-  {% set steg = ("ny", "i_produksjon", "klar", "levert", "forlatt", "avbrutt") %}
-  {% set lovlige = flyt[o.status] %}
-
-  <div class="stegrad">
-    {% for s in steg %}
-      {% if s in lovlige %}
-      <form method="post" action="/admin/ordre/{{ o.id }}/status" class="inline">
-        <input type="hidden" name="ny" value="{{ s }}">
-        <button type="submit" class="knapp steg {% if s == lovlige[0] %}primar{% endif %}">{{ statusnavn[s] }}</button>
-      </form>
-      {% else %}
-      <span class="knapp steg av {% if s == o.status %}naa{% endif %}"
-            aria-hidden="true">{{ statusnavn[s] }}</span>
-      {% endif %}
-    {% endfor %}
-  </div>
-
-  <div class="verktoyrad">
-    <form method="post" action="/admin/ordre/{{ o.id }}/betalt" class="inline">
-      <input type="hidden" name="betalt" value="{{ 0 if o.betalt else 1 }}">
-      <button type="submit" class="knapp">{{ "Ikke betalt likevel" if o.betalt else "Marker betalt" }}</button>
-    </form>
-    <form method="post" action="/admin/ordre/{{ o.id }}/skriv-ut" class="inline">
-      <button type="submit" class="knapp">Skriv ut igjen</button>
-    </form>
-    {# «Fjern», ikke «slett»: ordren tas ut av lista og av tavla, men raden
-       blir staaende i basen sa tallene stemmer naar kvelden gjores opp.
-       To trinn framfor en dialogboks — en dialog midt i et rush er verre
-       enn et trykk til. #}
-    <form method="post" action="/admin/ordre/{{ o.id }}/slett" class="inline">
-      <button type="submit" class="knapp slett" data-sporsmal="Fjern {{ o.dagsnummer }}?"
-              title="Tar {{ o.dagsnummer }} ut av lista og tavla. Ordren blir liggende i basen."
-              aria-label="Fjern bestilling {{ o.dagsnummer }} fra lista">
-        <svg class="ikon" aria-hidden="true"><use href="#soppel"></use></svg>
-        <span class="ord">Fjern</span>
-      </button>
-    </form>
-  </div>
-{%- endmacro %}
-
-{% macro varelinje(rad) -%}
-  {% for l in rad.linjer %}<span class="kode">{{ l.antall }}×{{ l.etikett_snapshot[:1] | upper }}</span> {{ l.navn_snapshot }}{% if not loop.last %}, {% endif %}{% endfor %}
-{%- endmacro %}
-
 {% block innhold %}
 <main class="side admin">
 
@@ -74,89 +19,10 @@
     </div>
   </header>
 
-  {% if feilede %}
-  <section class="varsel printfeil">
-    <h2>{{ feilede | length }} jobb{{ "er" if feilede | length != 1 }} feilet</h2>
-    <ul>
-      {% for j in feilede %}
-      <li>
-        <span>{% if j.dagsnummer %}Nr {{ j.dagsnummer }} ({{ j.kundenavn }}){% else %}Jobb {{ j.id }}{% endif %} — {{ j.siste_feil }}</span>
-        <form method="post" action="/admin/jobb/{{ j.id }}/paa-nytt" class="inline">
-          <button type="submit" class="knapp">Prøv igjen</button>
-        </form>
-      </li>
-      {% endfor %}
-    </ul>
-  </section>
-  {% endif %}
-
-  {% if uverifiserte %}
-  <details class="varsel allergen-sjekkliste">
-    <summary>Allergenlista er et utkast — {{ uverifiserte | length }} ingredienser er ikke lest av emballasjen</summary>
-    <ul>
-      {% for i in uverifiserte %}
-      <li><b>{{ i.navn }}</b> — {{ i.notat }}</li>
-      {% endfor %}
-    </ul>
-  </details>
-  {% endif %}
-
-  {# Mobil: kort. Kjøkkenmobilen skal aldri scrolle sidelengs. #}
-  <ul class="ordreliste">
-    {% for rad in rader %}
-    {% set o = rad.ordre %}
-    <li class="ordrekort {% if rad.gammel %}gammel{% endif %}"
-        data-ordre="{{ o.id }}" data-status="{{ o.status }}">
-      <span class="nr mono">{{ o.dagsnummer }}</span>
-      <span class="navn">{{ o.kundenavn }}</span>
-      <span class="varer">{{ varelinje(rad) }}</span>
-      <div class="meta">
-        <span>{{ statusnavn[o.status] }}</span>
-        <span class="{{ 'betalt-ja' if o.betalt else 'betalt-nei' }}">{{ "Betalt" if o.betalt else "Ikke betalt" }}</span>
-        <span>{{ o.total_ore | kroner }}</span>
-        <span>Etiketter {{ rad.print.ferdig or 0 }}/{{ rad.print.totalt or 0 }}</span>
-        {% if rad.print.feilet %}<span class="etikett-feil">{{ rad.print.feilet }} feil</span>{% endif %}
-        {% if rad.gammel %}<span class="alder gammel-merke">klar i {{ rad.minutter }} min</span>{% endif %}
-      </div>
-      <div class="handling">{{ handlinger(o) }}</div>
-    </li>
-    {% endfor %}
-  </ul>
-
-  {# PC: tabell. Flere ordrer i syne samtidig. #}
-  <table class="ordretabell">
-    <thead>
-      <tr>
-        <th>Nr</th><th>Navn</th><th>Bestilling</th><th>Status</th>
-        <th>Etiketter</th><th>Handling</th>
-      </tr>
-    </thead>
-    <tbody id="ordrekropp">
-      {% for rad in rader %}
-      {% set o = rad.ordre %}
-      <tr class="ordre {% if rad.gammel %}gammel{% endif %}"
-          data-ordre="{{ o.id }}" data-status="{{ o.status }}">
-        <td class="nr mono">{{ o.dagsnummer }}</td>
-        <td class="navn">{{ o.kundenavn }}</td>
-        <td class="varer">
-          {{ varelinje(rad) }}
-          <span class="sum">{{ o.total_ore | kroner }} · {{ "betalt" if o.betalt else "ikke betalt" }}</span>
-        </td>
-        <td class="status-celle">
-          <span class="status-merke">{{ statusnavn[o.status] }}</span>
-          {% if rad.gammel %}<span class="gammel-merke">klar i {{ rad.minutter }} min</span>{% endif %}
-        </td>
-        <td class="etiketter">
-          {{ rad.print.ferdig or 0 }}/{{ rad.print.totalt or 0 }}
-          {% if rad.print.feilet %}<span class="etikett-feil">{{ rad.print.feilet }} feil</span>{% endif %}
-        </td>
-        <td><div class="handling">{{ handlinger(o) }}</div></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  {% if not rader %}<p class="ingen">Ingen bestillinger ennå</p>{% endif %}
+  {# Alt som endrer seg under service ligger her inne. Pollingen bytter ut
+     akkurat denne bolken og rorer ingenting rundt — da overlever et
+     halvskrevet felt i Styring og en finger pa vei mot en knapp. #}
+  <div id="arbeidsflate">{% include "admin/_arbeidsflate.html" %}</div>
 
   <h2 class="styring-tittel">Styring</h2>
   <section class="styring">
@@ -273,45 +139,81 @@
 
   </section>
 </main>
+
+<dialog id="bekreft" class="bekreft">
+  <h2>Er du sikker?</h2>
+  <p id="bekreft-tekst"></p>
+  <div class="bekreft-knapper">
+    <button type="button" class="knapp" id="bekreft-nei">Avbryt</button>
+    <button type="button" class="knapp fare" id="bekreft-ja">Slett permanent</button>
+  </div>
+</dialog>
 {% endblock %}
 
 {% block skript %}
 <script>
-// Slett i to trinn. Forste trykk gjor knappen til et sporsmal, andre sender.
-// Angrer man, forsvinner sporsmalet av seg selv etter fire sekunder.
-document.querySelectorAll("button.slett").forEach(knapp => {
-  const ord = knapp.querySelector(".ord");
-  const opprinnelig = ord.textContent;
-  let bevaepnet = false, klokke = null;
+// Bekreftelse i en dialog INNE i sida. window.confirm fryser hele fanen, og
+// da mister vi kontakten med den — samme grunn som at «Nullstill dagen» ber
+// deg skrive et ord framfor a spore i en dialogboks.
+const dialog = document.getElementById("bekreft");
+const dialogTekst = document.getElementById("bekreft-tekst");
+let ventende = null;
 
-  knapp.addEventListener("click", e => {
-    if (bevaepnet) return;                 // andre trykk: la skjemaet sendes
-    e.preventDefault();
-    bevaepnet = true;
-    knapp.classList.add("bevaepnet");
-    ord.textContent = knapp.dataset.sporsmal;
-    klokke = setTimeout(() => {
-      bevaepnet = false;
-      knapp.classList.remove("bevaepnet");
-      ord.textContent = opprinnelig;
-    }, 4000);
+function kobleBekreftelser() {
+  document.querySelectorAll("button[data-bekreft]").forEach(knapp => {
+    if (knapp.dataset.koblet) return;      // overlever bytte av arbeidsflata
+    knapp.dataset.koblet = "1";
+    knapp.addEventListener("click", e => {
+      e.preventDefault();
+      ventende = knapp.form;
+      dialogTekst.textContent = knapp.dataset.bekreft;
+      dialog.showModal();
+    });
   });
-
-  // Polling laster sida pa nytt nar noe endres; da skal ingen knapp sta armert.
-  window.addEventListener("beforeunload", () => clearTimeout(klokke));
+}
+document.getElementById("bekreft-nei").addEventListener("click", () => {
+  ventende = null;
+  dialog.close();
 });
+document.getElementById("bekreft-ja").addEventListener("click", () => {
+  dialog.close();
+  if (ventende) ventende.submit();
+});
+kobleBekreftelser();
 
-// Polling framfor SSE: enklere, og taaler at nettet hikker. Sida lastes bare
-// pa nytt nar noe faktisk er endret, sa man ikke mister et knappetrykk.
+// Polling framfor SSE: enklere, og taaler at nettet hikker.
+//
+// Vi bytter ut BARE #arbeidsflate, ikke hele sida. Et location.reload() spiste
+// halvskrevne felt i Styring, scrollposisjonen og en finger som var pa vei mot
+// en knapp — hvert fjerde sekund, hele kvelden.
+const flate = document.getElementById("arbeidsflate");
 let forrigeSignatur = null;
+let sisteBeroring = 0;
+flate.addEventListener("pointerdown", () => { sisteBeroring = Date.now(); });
+
+// Bytt aldri ut noe noen holder pa med. Da venter vi bare til neste runde.
+function kanBytte() {
+  if (document.querySelector("dialog[open]")) return false;
+  if (flate.contains(document.activeElement)) return false;
+  return Date.now() - sisteBeroring >= 800;
+}
+
 async function oppdater() {
   try {
     const r = await fetch("/admin/data");
     if (!r.ok) return;
     const d = await r.json();
-    if (forrigeSignatur !== null && forrigeSignatur !== d.signatur) location.reload();
+
+    if (forrigeSignatur !== null && forrigeSignatur !== d.signatur) {
+      if (!kanBytte()) return;             // signaturen star, vi proever igjen
+      const h = await fetch("/admin/rader");
+      if (!h.ok) return;
+      flate.innerHTML = await h.text();
+      kobleBekreftelser();
+    }
     forrigeSignatur = d.signatur;
-    // Alderen oppdateres i nettleseren, uten a laste noe.
+
+    // Alderen regnes ut i nettleseren, uten a hente noe.
     for (const o of d.ordrer) {
       document.querySelectorAll(`[data-ordre="${o.id}"] .gammel-merke`)
         .forEach(el => { el.textContent = `klar i ${o.minutter} min`; });

@@ -1,0 +1,106 @@
+{# Fragmentet pollingen bytter ut. Rendres bade av /admin (via include) og
+   av /admin/rader alene — derfor importeres makroene framfor a ligge her. #}
+{% import "admin/_makroer.html" as m with context %}
+  {% if feilede %}
+  <section class="varsel printfeil">
+    <h2>{{ feilede | length }} jobb{{ "er" if feilede | length != 1 }} feilet</h2>
+    <ul>
+      {% for j in feilede %}
+      <li>
+        <span>{% if j.dagsnummer %}Nr {{ j.dagsnummer }} ({{ j.kundenavn }}){% else %}Jobb {{ j.id }}{% endif %} — {{ j.siste_feil }}</span>
+        <form method="post" action="/admin/jobb/{{ j.id }}/paa-nytt" class="inline">
+          <button type="submit" class="knapp">Prøv igjen</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if uverifiserte %}
+  <details class="varsel allergen-sjekkliste">
+    <summary>Allergenlista er et utkast — {{ uverifiserte | length }} ingredienser er ikke lest av emballasjen</summary>
+    <ul>
+      {% for i in uverifiserte %}
+      <li><b>{{ i.navn }}</b> — {{ i.notat }}</li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+
+  {# Mobil: kort. Kjøkkenmobilen skal aldri scrolle sidelengs. #}
+  <ul class="ordreliste">
+    {% for rad in rader %}
+    {% set o = rad.ordre %}
+    <li class="ordrekort {% if rad.gammel %}gammel{% endif %}"
+        data-ordre="{{ o.id }}" data-status="{{ o.status }}">
+      <span class="nr mono">{{ o.dagsnummer }}</span>
+      <span class="navn">{{ o.kundenavn }}</span>
+      <span class="varer">{{ m.varelinje(rad) }}</span>
+      <div class="meta">
+        <span>{{ statusnavn[o.status] }}</span>
+        <span class="{{ 'betalt-ja' if o.betalt else 'betalt-nei' }}">{{ "Betalt" if o.betalt else "Ikke betalt" }}</span>
+        <span>{{ o.total_ore | kroner }}</span>
+        <span>Etiketter {{ rad.print.ferdig or 0 }}/{{ rad.print.totalt or 0 }}</span>
+        {% if rad.print.feilet %}<span class="etikett-feil">{{ rad.print.feilet }} feil</span>{% endif %}
+        {% if rad.gammel %}<span class="alder gammel-merke">klar i {{ rad.minutter }} min</span>{% endif %}
+      </div>
+      <div class="handling">{{ m.handlinger(o) }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  {# PC: tabell. Flere ordrer i syne samtidig. #}
+  <table class="ordretabell">
+    <thead>
+      <tr>
+        <th>Nr</th><th>Navn</th><th>Bestilling</th><th>Status</th>
+        <th>Etiketter</th><th>Handling</th>
+      </tr>
+    </thead>
+    <tbody id="ordrekropp">
+      {% for rad in rader %}
+      {% set o = rad.ordre %}
+      <tr class="ordre {% if rad.gammel %}gammel{% endif %}"
+          data-ordre="{{ o.id }}" data-status="{{ o.status }}">
+        <td class="nr mono">{{ o.dagsnummer }}</td>
+        <td class="navn">{{ o.kundenavn }}</td>
+        <td class="varer">
+          {{ m.varelinje(rad) }}
+          <span class="sum">{{ o.total_ore | kroner }} · {{ "betalt" if o.betalt else "ikke betalt" }}</span>
+        </td>
+        <td class="status-celle">
+          <span class="status-merke">{{ statusnavn[o.status] }}</span>
+          {% if rad.gammel %}<span class="gammel-merke">klar i {{ rad.minutter }} min</span>{% endif %}
+        </td>
+        <td class="etiketter">
+          {{ rad.print.ferdig or 0 }}/{{ rad.print.totalt or 0 }}
+          {% if rad.print.feilet %}<span class="etikett-feil">{{ rad.print.feilet }} feil</span>{% endif %}
+        </td>
+        <td><div class="handling">{{ m.handlinger(o) }}</div></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if not rader %}<p class="ingen">Ingen bestillinger ennå</p>{% endif %}
+
+{# Angrelista. Uten den ville krysset vaert et ettklikks tap, og da matte det
+   hatt en bekreftelse — som er nettopp det vi ikke vil ha midt i et rush. #}
+{% if skjulte %}
+<details class="skjulte">
+  <summary>Skjulte ({{ skjulte | length }})</summary>
+  <ul>
+    {% for rad in skjulte %}
+    <li>
+      <span class="nr mono">{{ rad.ordre.dagsnummer }}</span>
+      <span class="navn">{{ rad.ordre.kundenavn }}</span>
+      <span class="status">{{ statusnavn[rad.ordre.status] }}</span>
+      <form method="post" action="/admin/ordre/{{ rad.ordre.id }}/vis" class="inline">
+        <button type="submit" class="knapp">Hent tilbake</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}

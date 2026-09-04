@@ -554,3 +554,89 @@ def test_skjult_ordre_stopper_koen_og_slutter_a_mase(tmp_path, monkeypatch):
     assert "ny" not in jobbstatus()
     # ... og den staar ikke i feilbanneret i admin, selv om den er merket feilet.
     assert all(j["ordre_id"] != oid for j in jobber.feilede())
+
+
+def test_slett_ordre_fjerner_raden_men_frigir_ikke_nummeret(tmp_path, monkeypatch):
+    """Soppelboetta i admin: raden skal vaere borte, nummeret skal ikke gaa igjen.
+
+    To esker i samme rom med samme tall er den ene feilen dette systemet
+    aldri skal kunne gjore, sa selv en permanent sletting lar telleren staa.
+    """
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    from app import ordrer
+    from app.ordrer import Onske, opprett, slett_ordre
+
+    eid = _meny_id(db, "margherita")
+    feil = opprett("Feiltrykk", "a@example.com", [Onske(eid, 2)])
+    ekte = opprett("Ekte", None, [Onske(eid, 1)])
+
+    with db.kobling() as kob:
+        assert len(ordrer.for_admin(kob)) == 2
+
+    assert slett_ordre(feil["ordre_id"]) is True
+    assert slett_ordre(feil["ordre_id"]) is False, "andre sletting finner ingenting"
+
+    with db.kobling() as kob:
+        synlige = [r["ordre"]["dagsnummer"] for r in ordrer.for_admin(kob)]
+        assert synlige == [ekte["nummer"]]
+
+        # Linjer, statuslogg og jobber folger med via ON DELETE CASCADE.
+        for tabell in ("ordrelinje", "statuslogg", "jobb"):
+            n = kob.execute(
+                f"SELECT COUNT(*) AS n FROM {tabell} WHERE ordre_id = ?",
+                (feil["ordre_id"],),
+            ).fetchone()["n"]
+            assert n == 0, f"{tabell} skulle vaert tomt for den slettede ordren"
+
+    neste = opprett("Neste", None, [Onske(eid, 1)])
+    assert neste["nummer"] > ekte["nummer"], "nummeret til en slettet ordre er brent"
+
+
+def test_solgte_pizzaer_teller_skjulte_men_ikke_avbrutte(tmp_path, monkeypatch):
+    """Salgstallet skal ikke telle nedover naar leverte ordrer ryddes vekk."""
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    from app import ordrer
+    from app.ordrer import Onske, opprett
+
+    eid = _meny_id(db, "margherita")
+    a = opprett("A", None, [Onske(eid, 2)])
+    b = opprett("B", None, [Onske(eid, 3)])
+    c = opprett("C", None, [Onske(eid, 4)])
+
+    with db.kobling() as kob:
+        assert ordrer.solgte_pizzaer(kob) == 9
+
+    # Skjult teller fortsatt med — pizzaen er laget og betalt.
+    ordrer.skjul_ordre(a["ordre_id"])
+    with db.kobling() as kob:
+        assert ordrer.solgte_pizzaer(kob) == 9
+        assert len(ordrer.for_admin(kob)) == 2
+        assert [r["ordre"]["id"] for r in ordrer.skjulte_for_admin(kob)] == [
+            a["ordre_id"]
+        ]
+
+    # Avbrutt teller ikke — den ble aldri laget.
+    ordrer.sett_status(b["ordre_id"], "avbrutt")
+    with db.kobling() as kob:
+        assert ordrer.solgte_pizzaer(kob) == 6
+
+    # Slettet teller ikke — raden finnes ikke lenger.
+    ordrer.slett_ordre(c["ordre_id"])
+    with db.kobling() as kob:
+        assert ordrer.solgte_pizzaer(kob) == 2
+
+
+def test_for_admin_gir_eldste_ordre_forst(tmp_path, monkeypatch):
+    """Nye ordrer skal legge seg nederst, ikke skyve radene under fingeren."""
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    from app import ordrer
+    from app.ordrer import Onske, opprett
+
+    eid = _meny_id(db, "margherita")
+    numre = [opprett(n, None, [Onske(eid, 1)])["nummer"] for n in ("A", "B", "C")]
+
+    with db.kobling() as kob:
+        assert [r["ordre"]["dagsnummer"] for r in ordrer.for_admin(kob)] == numre

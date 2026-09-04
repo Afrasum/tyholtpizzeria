@@ -61,6 +61,43 @@ def logg_ut():
 # ── Oversikt ────────────────────────────────────────────────────────────────
 
 
+def _arbeidsflate(kob) -> dict:
+    """Det pollingen bytter ut: feilvarsel, ordrelista og angrelista.
+
+    Egen funksjon fordi bade /admin og /admin/rader rendrer det samme
+    fragmentet. Ett sted a endre, sa de to aldri kan vise ulike ting.
+    """
+    rader = ordrer.for_admin(kob)
+    for rad in rader:
+        rad["minutter"] = _minutter_siden(rad["ordre"]["oppdatert"])
+        rad["gammel"] = (
+            rad["ordre"]["status"] == "klar"
+            and rad["minutter"] >= ordrer.GAMMEL_ETTER_MIN
+        )
+    return {
+        "rader": rader,
+        "skjulte": ordrer.skjulte_for_admin(kob),
+        "statusnavn": ordrer.STATUSNAVN,
+        "flyt": ordrer.FLYT,
+        "feilede": jobber.feilede(),
+        "gammel_etter": ordrer.GAMMEL_ETTER_MIN,
+    }
+
+
+@ruter.get("/rader", response_class=HTMLResponse)
+def rader(request: Request, _=Depends(auth.krev)):
+    """Bare arbeidsflaten, som HTML-fragment.
+
+    Pollingen henter denne og bytter ut #arbeidsflate framfor a laste hele
+    sida. Da overlever halvskrevne felt, scrollposisjonen og et knappetrykk
+    som er pa vei.
+    """
+    with kobling() as kob:
+        return maler.TemplateResponse(
+            request, "admin/_arbeidsflate.html", _arbeidsflate(kob)
+        )
+
+
 @ruter.get("", response_class=HTMLResponse)
 def oversikt(
     request: Request,
@@ -72,37 +109,21 @@ def oversikt(
     _=Depends(auth.krev),
 ):
     with kobling() as kob:
-        rader = ordrer.for_admin(kob)
         aapent, grunn = ordrer.kan_bestille(kob)
-
-        for rad in rader:
-            rad["minutter"] = _minutter_siden(rad["ordre"]["oppdatert"])
-            rad["gammel"] = (
-                rad["ordre"]["status"] == "klar"
-                and rad["minutter"] >= ordrer.GAMMEL_ETTER_MIN
-            )
-
-        solgt = sum(
-            l["antall"] for rad in rader for l in rad["linjer"]
-            if rad["ordre"]["status"] != "avbrutt"
-        )
 
         return maler.TemplateResponse(
             request,
             "admin/oversikt.html",
-            {
-                "rader": rader,
+            _arbeidsflate(kob) | {
                 "aapent": aapent,
                 "grunn": grunn,
                 "meny": meny.full_meny(kob),
                 "innst": innstillinger.alle(kob),
-                "statusnavn": ordrer.STATUSNAVN,
-                "flyt": ordrer.FLYT,
-                "solgt": solgt,
-                "feilede": jobber.feilede(),
+                # Teller skjulte ordrer med: rydder man vekk leverte utover
+                # kvelden, skal salgstallet ikke telle nedover mot null.
+                "solgt": ordrer.solgte_pizzaer(kob),
                 "kostatus": jobber.kostatus(),
                 "uverifiserte": allergener.uverifiserte_ingredienser(kob),
-                "gammel_etter": ordrer.GAMMEL_ETTER_MIN,
                 "slettet": slettet,
                 "nullstill_avvist": nullstill == "avvist",
                 "mottakere": innstillinger.mottakere(kob),
@@ -154,11 +175,22 @@ def data(_=Depends(auth.krev)):
             | {"print": o["print"], "linjer": o["linjer"]}
             for o in ut
         ]
+        # Feilede jobber og skjulte ordrer inn i signaturen: begge vises inne i
+        # #arbeidsflate, og uten dem ville de statt uendret til noe annet
+        # tilfeldigvis endret seg.
+        feilede = [
+            {"id": j["id"], "feil": j["siste_feil"]} for j in jobber.feilede()
+        ]
+        skjulte = [r["ordre"]["id"] for r in ordrer.skjulte_for_admin(kob)]
         return {
             "ordrer": ut,
-            "feilede_jobber": len(jobber.feilede()),
+            "feilede_jobber": len(feilede),
             "signatur": hashlib.sha256(
-                json.dumps(stabilt, sort_keys=True, ensure_ascii=False).encode()
+                json.dumps(
+                    {"ordrer": stabilt, "feilede": feilede, "skjulte": skjulte},
+                    sort_keys=True,
+                    ensure_ascii=False,
+                ).encode()
             ).hexdigest(),
         }
 
@@ -187,10 +219,28 @@ def skriv_ut_paa_nytt(ordre_id: int, _=Depends(auth.krev)):
     return RedirectResponse("/admin", status_code=303)
 
 
-@ruter.post("/ordre/{ordre_id}/slett")
+@ruter.post("/ordre/{ordre_id}/skjul")
 def skjul_ordre(ordre_id: int, _=Depends(auth.krev)):
-    """Tar ordren ut av arbeidsflaten. Raden blir staaende i basen."""
+    """Krysset: tar ordren ut av lista og av tavla. Raden blir staaende.
+
+    Ett trykk uten bekreftelse, fordi angrelista under ordrene henter den
+    tilbake.
+    """
     ordrer.skjul_ordre(ordre_id)
+    return RedirectResponse("/admin", status_code=303)
+
+
+@ruter.post("/ordre/{ordre_id}/vis")
+def vis_ordre(ordre_id: int, _=Depends(auth.krev)):
+    """«Hent tilbake» i angrelista."""
+    ordrer.skjul_ordre(ordre_id, skjult=False)
+    return RedirectResponse("/admin", status_code=303)
+
+
+@ruter.post("/ordre/{ordre_id}/slett-permanent")
+def slett_ordre(ordre_id: int, _=Depends(auth.krev)):
+    """Soppelboetta: raden forsvinner fra basen. Krever bekreftelse i UI-et."""
+    ordrer.slett_ordre(ordre_id)
     return RedirectResponse("/admin", status_code=303)
 
 
