@@ -243,6 +243,25 @@ class Printer:
 
     # ── Printing ───────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _rasterlinjer(data: bytes):
+        """Send hver linje som ekte data. Aldri 'Z'.
+
+        labelmaker_encode koder en helt blank linje som ettbyte-kommandoen
+        'Z' (zerofill). P300BT ser ut til a ignorere den: blanke linjer
+        forsvinner rett og slett, og da klapper etiketten sammen til bare de
+        radene som har blekk i seg. Symptomet var en etikett der det sto
+        «I:» - restene av teksten presset mot hverandre - og en blank hale
+        pa 190 linjer som ikke matet tapen en millimeter, fordi alle 190 var
+        'Z'.
+
+        En blank linje som ekte RLE-data er fem byte i stedet for en. For en
+        hel strimmel er det noen kilobyte ekstra over Bluetooth, og det er
+        en billig pris for at tapen faktisk flytter seg.
+        """
+        for i in range(0, len(data), 16):
+            yield _ptcbp.serialize_data(data[i : i + 16], "rle")
+
     def skriv_ut(
         self, nummer: int, etiketter: list[dict], kundenavn: str = ""
     ) -> None:
@@ -280,7 +299,7 @@ class Printer:
                     # halen legges i selve bildet i stedet. Se PRINT_HALE.
                     end_margin=0,
                 )
-                for linje in _encode.encode_raster_transfer(data, False):
+                for linje in self._rasterlinjer(data):
                     ser.write(linje)
                 ser.write(_ptcbp.serialize_control("print"))
 
