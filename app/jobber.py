@@ -172,8 +172,37 @@ def varmholder(stopp: threading.Event) -> None:
         stopp.wait(30)
 
 
+def gjenopprett_avbrutte() -> int:
+    """Legg jobber som stod i «kjorer» tilbake i køen.
+
+    Blir prosessen drept midt i en jobb — en restart, et strømbrudd — står
+    raden igjen som «kjorer» for alltid. `_krev` ser bare «ny», så jobben blir
+    aldri forsøkt igjen, og den dukker ikke opp under feilede jobber heller.
+    Etiketten forsvinner i stillhet, og det er den eneste feilmåten vi ikke
+    tolererer her: en kunde står og venter på en eske uten lapp.
+
+    Trygt fordi det bare kjører ÉN prosess (uvicorn --workers 1). Står det en
+    «kjorer»-rad ved oppstart, er den per definisjon etterlatt av en død
+    prosess. Skulle noen en dag skru opp antall arbeidere, må dette bort.
+
+    Prisen er at en etikett som faktisk ble printet ferdig, men der prosessen
+    døde før `_fullfor` rakk å skrive, blir printet én gang for mye. En
+    etikett for mye kaster man; en etikett for lite gir en pizza uten navn.
+    """
+    with transaksjon() as kob:
+        markor = kob.execute(
+            "UPDATE jobb SET status = 'ny', oppdatert = ? WHERE status = 'kjorer'",
+            (naa(),),
+        )
+        antall = markor.rowcount
+    if antall:
+        logg.warning("la %s avbrutt(e) jobb(er) tilbake i køen etter oppstart", antall)
+    return antall
+
+
 def start(stopp: threading.Event) -> list[threading.Thread]:
     trader = []
+    gjenopprett_avbrutte()
     for jobbtype in UTFORERE:
         t = threading.Thread(
             target=arbeider, args=(jobbtype, stopp), name=f"jobb-{jobbtype}", daemon=True

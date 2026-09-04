@@ -291,3 +291,51 @@ def test_vanlig_printerfeil_gir_fortsatt_opp(tmp_path, monkeypatch):
         ).fetchone()
     assert rad["status"] == "feilet"
     assert rad["forsok"] == 3
+
+
+def test_avbrutt_jobb_blir_lagt_tilbake_i_koen(tmp_path, monkeypatch):
+    """En restart midt i en print skal ikke svelge etiketten.
+
+    Dette er ikke en teoretisk feil. `_krev` merker jobben «kjorer», og før
+    `gjenopprett_avbrutte` fantes var det ingenting som satte den tilbake:
+    en restart mens printeren jobbet etterlot raden der for godt — ingen
+    print, og ingen feilmelding heller, siden feillista bare viser «feilet».
+    """
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import jobber
+
+    _ordre(db)
+
+    tatt = jobber._krev("etikett")
+    assert tatt is not None
+    with db.kobling() as kob:
+        assert kob.execute(
+            "SELECT status FROM jobb WHERE id = ?", (tatt["id"],)
+        ).fetchone()["status"] == "kjorer"
+        # Den er usynlig for arbeideren OG for feillista mens den star der.
+        assert jobber._krev("etikett") is None
+
+    # Her dor prosessen. Ny oppstart:
+    assert jobber.gjenopprett_avbrutte() == 1
+
+    with db.kobling() as kob:
+        assert kob.execute(
+            "SELECT status FROM jobb WHERE id = ?", (tatt["id"],)
+        ).fetchone()["status"] == "ny"
+    assert jobber._krev("etikett")["id"] == tatt["id"]
+
+
+def test_gjenoppretting_roerer_ikke_ferdige_jobber(tmp_path, monkeypatch):
+    """Den skal bare ta «kjorer». En ferdig print skal ikke komme ut igjen."""
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import jobber
+
+    monkeypatch.setattr(jobber.printer, "skriv_ut", lambda **kw: None)
+    _ordre(db)
+    _kjor_til_tom("etikett")
+
+    assert jobber.gjenopprett_avbrutte() == 0
+    with db.kobling() as kob:
+        assert kob.execute(
+            "SELECT status FROM jobb WHERE type='etikett'"
+        ).fetchone()["status"] == "ferdig"
