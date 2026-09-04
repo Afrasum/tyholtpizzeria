@@ -999,11 +999,37 @@ body.skjerm { background: var(--fersken); color: var(--blekk); }
 .tom { margin: 0; font-family: var(--skilt); font-style: italic; font-size: clamp(1.75rem, 4vw, 2.5rem); color: var(--blekk-mild); }
 .tom-liten { margin: 0; font-family: var(--mono); font-size: 2rem; color: var(--blekk-svak); }
 
-/* Landskap på TV: klar-spalten får plassen den fortjener. */
+/* Landskap på TV: klar-spalten får plassen den fortjener.
+
+   Takene her er hoevet kraftig. De gamle (9.375rem / 4.25rem) var satt for
+   en laptopskjerm, og paa en 1080p-TV slo de inn lenge foer flata var brukt
+   — tallene fylte under en tiendedel av skjermen mens resten stod tom.
+   vw-leddet gjoer jobben paa alt som er mindre; taket slipper bare taket
+   loes paa det som er stort. */
 @media (min-width: 60rem) and (orientation: landscape) {
   .skjerm-side { grid-template-columns: 2fr 1fr; gap: 3rem; align-content: center; }
   .spalte-arbeid { border-top: none; border-left: 1px solid var(--linje-sterk); padding-top: 0; padding-left: 3rem; }
   .numre-sma { flex-direction: column; gap: .875rem; }
+
+  .spalte-klar h2 { margin-bottom: 1.75rem; font-size: clamp(2.5rem, 4.5vw, 5rem); }
+  .numre { gap: 1.5rem; }
+  .numre li { padding: .5rem 1.4rem; }
+  .spalte-arbeid h2 { font-size: clamp(1.5rem, 2.6vw, 2.75rem); }
+  .numre-sma { font-size: clamp(2.75rem, 6.5vw, 7.5rem); }
+  .tom { font-size: clamp(1.75rem, 3.4vw, 4rem); }
+
+  /* Stoerrelsen maa foelge antallet, ellers faller de siste tallene utenfor
+     skjermen — og et nummer ingen ser er verre enn et lite nummer. Testet
+     med TRESIFREDE tall, som er det breieste tilfellet: 20 klare ordrer paa
+     1080p faar fortsatt plass.
+
+     Retningen er med vilje «lite som utgangspunkt, stort naar det er faa»
+     framfor omvendt. Skulle nettleseren i TV-en ikke stoette :has(), blir
+     alle reglene under droppet, og da staar vi igjen med den trygge
+     stoerrelsen framfor den som klipper. */
+  .numre li { font-size: clamp(3.5rem, 6.5vw, 6.5rem); }
+  .numre:not(:has(li:nth-child(9))) li { font-size: clamp(4.5rem, 9vw, 9rem); }
+  .numre:not(:has(li:nth-child(5))) li { font-size: clamp(6rem, 13vw, 13rem); }
 }
 
 /* ── Innlogging, 404 ──────────────────────────────────────────────────── */
