@@ -32,7 +32,7 @@
 
     <section class="meny">
       <h2>Menyen</h2>
-      <p class="stemme ingress">Tre pizzaer. Trykk pluss.</p>
+      <p class="stemme ingress">Tre pizzaer. {% if aapent %}Trykk pluss.{% else %}Alle koster 59 kr.{% endif %}</p>
 
       <ul class="menyliste">
         {% for rett in meny %}
