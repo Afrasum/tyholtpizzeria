@@ -72,7 +72,6 @@ a:hover { color: var(--tomat-mork); }
   outline-offset: 2px;
   border-radius: 4px;
 }
-.skjerm-side :focus-visible,
 .betaling :focus-visible,
 .styringsboks.farlig :focus-visible { outline-color: var(--korn); }
 
@@ -928,7 +927,14 @@ main.admin { max-width: 100rem; padding-top: 2rem; }
 
 /* ── Tavla ────────────────────────────────────────────────────────────── */
 
-body.skjerm { background: var(--mork); color: var(--papir); }
+/* Tavla staar ute i dagslys fra klokka 15. En moerk skjerm i sol blir et
+   speil framfor informasjon, saa her gjelder lys bunn med moerke tall — den
+   kombinasjonen taaler mest omgivelseslys.
+
+   --fersken og ikke den lysere --kvittering, med vilje: tavla staar ogsaa
+   ute klokka 23, og da skal den ikke lyse opp hele bakgaarden. Moerk tekst
+   paa fersken gir 12:1 i kontrast, godt over kravet. */
+body.skjerm { background: var(--fersken); color: var(--blekk); }
 
 .skjerm-side {
   display: grid;
@@ -945,15 +951,15 @@ body.skjerm { background: var(--mork); color: var(--papir); }
   margin-bottom: 1.25rem;
   font-size: clamp(2.125rem, 5vw, 3.25rem);
   font-variation-settings: "opsz" 96, "SOFT" 100;
-  color: var(--korn);
+  color: var(--tomat);
 }
 
 .numre { display: flex; flex-wrap: wrap; gap: 1.25rem; margin: 0; padding: 0; list-style: none; }
 .numre li {
   padding: .625rem 1.6rem;
   border-radius: 8px;
-  background: var(--papir);
-  color: var(--blekk);
+  background: var(--mork);
+  color: var(--papir);
   font-family: var(--mono);
   font-weight: 700;
   font-size: clamp(4.5rem, 14vw, 9.375rem);
@@ -966,13 +972,12 @@ body.skjerm { background: var(--mork); color: var(--papir); }
   to { opacity: 1; transform: none; }
 }
 
-.spalte-arbeid { border-top: 1px solid rgba(240, 228, 204, .2); padding-top: 2rem; }
+.spalte-arbeid { border-top: 1px solid var(--linje-sterk); padding-top: 2rem; }
 .spalte-arbeid h2 {
   margin-bottom: 1rem;
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-variation-settings: "opsz" 48;
-  color: var(--papir);
-  opacity: .8;
+  color: var(--blekk-mild);
 }
 
 /* Dempet, men fortsatt lesbar fra andre siden av rommet — dette er tallene
@@ -988,17 +993,16 @@ body.skjerm { background: var(--mork); color: var(--papir); }
   font-weight: 700;
   font-size: clamp(2.75rem, 6vw, 4.25rem);
   line-height: 1;
-  color: var(--korn);
-  opacity: .85;
+  color: var(--blekk-mild);
 }
 
-.tom { margin: 0; font-family: var(--skilt); font-style: italic; font-size: clamp(1.75rem, 4vw, 2.5rem); opacity: .55; }
-.tom-liten { margin: 0; font-family: var(--mono); font-size: 2rem; opacity: .4; }
+.tom { margin: 0; font-family: var(--skilt); font-style: italic; font-size: clamp(1.75rem, 4vw, 2.5rem); color: var(--blekk-mild); }
+.tom-liten { margin: 0; font-family: var(--mono); font-size: 2rem; color: var(--blekk-svak); }
 
 /* Landskap på TV: klar-spalten får plassen den fortjener. */
 @media (min-width: 60rem) and (orientation: landscape) {
   .skjerm-side { grid-template-columns: 2fr 1fr; gap: 3rem; align-content: center; }
-  .spalte-arbeid { border-top: none; border-left: 1px solid rgba(240, 228, 204, .2); padding-top: 0; padding-left: 3rem; }
+  .spalte-arbeid { border-top: none; border-left: 1px solid var(--linje-sterk); padding-top: 0; padding-left: 3rem; }
   .numre-sma { flex-direction: column; gap: .875rem; }
 }
 
