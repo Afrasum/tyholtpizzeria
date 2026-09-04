@@ -218,6 +218,41 @@ def feilede() -> list:
         )
 
 
+def koe_testetikett() -> int:
+    """Legg en kjent etikett i koen, uten a lage en ordre.
+
+    Finnes for a kunne stille inn printeren uten a forurense kveldens tall.
+    Gaar gjennom NOYAKTIG samme vei som en ekte etikett - samme jobbko, samme
+    render, samme serieport - sa det den spytter ut er sannheten om hva en
+    kunde ville fatt.
+
+    ordre_id er NULL, sa raden henger ikke ved noen bestilling.
+    """
+    with transaksjon() as kob:
+        tid = naa()
+        markor = kob.execute(
+            "INSERT INTO jobb (type, nyttelast, status, ordre_id, opprettet,"
+            " oppdatert) VALUES ('etikett', ?, 'ny', NULL, ?, ?)",
+            (
+                json.dumps(
+                    {
+                        "ordre_id": None,
+                        "nummer": 88,
+                        "kundenavn": "Testesen",
+                        "etiketter": [
+                            {"tekst": "Margherita", "indeks": 1, "av": 2},
+                            {"tekst": "Skinke", "indeks": 2, "av": 2},
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                tid,
+                tid,
+            ),
+        )
+        return int(markor.lastrowid)
+
+
 def koe_paa_nytt(jobb_id: int) -> bool:
     """Legg en feilet jobb tilbake i køen. Reprint-knappen i admin."""
     with transaksjon() as kob:

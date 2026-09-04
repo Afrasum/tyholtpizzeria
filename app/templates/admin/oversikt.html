@@ -61,7 +61,12 @@
         {% for type, tilstander in kostatus.items() %}{{ type }}:
         {% for tilstand, n in tilstander.items() %}{{ n }} {{ tilstand }}{% if not loop.last %}, {% endif %}{% endfor %}{% if not loop.last %} · {% endif %}{% endfor %}
       </p>
-      <small>Låser den seg: skru den av og på. Køen skriver seg ut selv.</small>
+      {% if test_koet %}<p class="naa">Testetikett lagt i køen.</p>{% endif %}
+      <form method="post" action="/admin/testetikett">
+        <button type="submit" class="knapp">Skriv testetikett</button>
+      </form>
+      <small>Låser den seg: skru den av og på. Køen skriver seg ut selv.
+        Testetiketten går samme vei som en ekte, men lager ingen ordre.</small>
     </div>
 
     <div class="styringsboks">

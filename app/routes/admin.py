@@ -104,6 +104,7 @@ def oversikt(
     ryddet: int | None = None,
     slettalt: str = "",
     kopi: str = "",
+    test: str = "",
     vipps: str = "",
     eposttest: str = "",
     epostmelding: str = "",
@@ -128,6 +129,7 @@ def oversikt(
                 "ryddet": ryddet,
                 "slettalt": slettalt,
                 "kopi": kopi,
+                "test_koet": test == "koet",
                 "mottakere": innstillinger.mottakere(kob),
                 "aktiv_mottaker": innstillinger.aktiv_mottaker(kob),
                 "vipps_ugyldig": vipps == "ugyldig",
@@ -328,6 +330,13 @@ def epost_test(til: str = Form(""), _=Depends(auth.krev)):
         f"&epostmelding={quote(melding[:300])}",
         status_code=303,
     )
+
+
+@ruter.post("/testetikett")
+def testetikett(_=Depends(auth.krev)):
+    """Skriv en kjent etikett, uten a lage en ordre. Til a stille inn matingen."""
+    jobber.koe_testetikett()
+    return RedirectResponse("/admin?test=koet", status_code=303)
 
 
 @ruter.get("/printerstatus")
