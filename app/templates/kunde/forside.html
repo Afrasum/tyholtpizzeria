@@ -18,7 +18,7 @@
       <li>15:00–00:00</li>
       {# Foer prisen med vilje: .fakta li:last-child er den rode brikka, og
          den skal staa paa «59 kr», ikke paa stoerrelsen. #}
-      <li>ca. 20 cm</li>
+      <li>ca. 20 cm*</li>
       <li>Alt koster 59 kr</li>
     </ul>
   </header>
@@ -90,14 +90,14 @@
       </ul>
 
       <p class="spor">
-        <b>Ca. 20 cm i diameter</b>
-        Deigen kjevles ut for hånd, så noen blir litt større og andre litt
+        <b>* Ca. 20 cm i diameter</b>
+        Deigen strekkes for hånd, så noen blir litt større og andre litt
         mindre. Regn med ±2 cm.
       </p>
 
       {% if spor %}
       <p class="spor">
-        <b>Kan inneholde spor av</b>
+        <b>* Kan inneholde spor av</b>
         {% for a in spor %}{{ a.navn }}{% if not loop.last %} · {% endif %}{% endfor %}.
         Alt lages på samme kjøkken, så vi kan ikke garantere mot krysskontaminering.
       </p>
