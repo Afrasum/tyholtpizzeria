@@ -184,9 +184,17 @@ def test_statusflyt_tillater_lovlig_og_avviser_ulovlig(tmp_path, monkeypatch):
     assert sett_status(oid, "klar")["status"] == "klar"
     assert sett_status(oid, "levert")["status"] == "levert"
 
-    # Levert er endestasjon.
+    # Levert er ikke lenger endestasjon: ett trinn tilbake er angreknappen for
+    # et feiltrykk i koen. Men bare ett trinn — den kan ikke settes tilbake til
+    # «ny», for da ville nummeret vaert i produksjon uten at noen hadde bestilt.
+    assert sett_status(oid, "klar")["status"] == "klar"
+    assert sett_status(oid, "levert")["status"] == "levert"
     with pytest.raises(Avvist):
-        sett_status(oid, "klar")
+        sett_status(oid, "ny")
+
+    # Og en tilstand som ikke finnes skal fortsatt avvises.
+    with pytest.raises(Avvist):
+        sett_status(oid, "pizzaen_brant")
 
 
 def test_klar_koer_epost_bare_naar_epost_er_oppgitt(tmp_path, monkeypatch):
@@ -469,3 +477,36 @@ def test_skjermen_viser_nye_ordrer_som_under_arbeid(tmp_path, monkeypatch):
     )
     assert tall["klare"] == [c["nummer"]]
     assert d["nummer"] not in tall["under_arbeid"] + tall["klare"]
+
+
+def test_slett_ordre_fjerner_alt_men_gjenbruker_ikke_nummeret(tmp_path, monkeypatch):
+    db = _oppsett(tmp_path, monkeypatch)
+    _tving_apent(db)
+    from app.ordrer import Onske, opprett, slett_ordre
+
+    eid = _meny_id(db, "margherita")
+    forste = opprett("Feiltrykk", "a@example.com", [Onske(eid, 2)])
+    oid = forste["ordre_id"]
+
+    def antall(tabell):
+        nokkel = "id" if tabell == "ordre" else "ordre_id"
+        with db.kobling() as kob:
+            return kob.execute(
+                f"SELECT count(*) FROM {tabell} WHERE {nokkel} = ?", (oid,)
+            ).fetchone()[0]
+
+    # Linjer, logg og jobber finnes for slettingen.
+    assert antall("ordrelinje") == 1
+    assert antall("statuslogg") >= 1
+    assert antall("jobb") >= 1
+
+    assert slett_ordre(oid) is True
+    assert slett_ordre(oid) is False          # idempotent, ikke en feil
+
+    for tabell in ("ordre", "ordrelinje", "statuslogg", "jobb"):
+        assert antall(tabell) == 0, f"{tabell} hadde rader igjen"
+
+    # Telleren gaar videre. To esker med samme nummer samme kveld er verre
+    # enn et hull i rekka.
+    neste = opprett("Etterpaa", None, [Onske(eid, 1)])
+    assert neste["nummer"] == forste["nummer"] + 1

@@ -189,6 +189,12 @@ def skriv_ut_paa_nytt(ordre_id: int, _=Depends(auth.krev)):
     return RedirectResponse("/admin", status_code=303)
 
 
+@ruter.post("/ordre/{ordre_id}/slett")
+def slett_ordre(ordre_id: int, _=Depends(auth.krev)):
+    ordrer.slett_ordre(ordre_id)
+    return RedirectResponse("/admin", status_code=303)
+
+
 @ruter.post("/jobb/{jobb_id}/paa-nytt")
 def jobb_paa_nytt(jobb_id: int, _=Depends(auth.krev)):
     jobber.koe_paa_nytt(jobb_id)

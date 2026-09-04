@@ -107,7 +107,7 @@ def kvittering(request: Request, ordre_id: int):
                 "ordre": pakke["ordre"],
                 "linjer": pakke["linjer"],
                 "innst": innstillinger.alle(kob),
-                "statusnavn": ordrer.STATUSNAVN,
+                "statusnavn": ordrer.KUNDESTATUS,
             },
         )
 
@@ -125,5 +125,5 @@ def status(ordre_id: int):
         "finnes": True,
         "nummer": rad["dagsnummer"],
         "status": rad["status"],
-        "statusnavn": ordrer.STATUSNAVN.get(rad["status"], rad["status"]),
+        "statusnavn": ordrer.KUNDESTATUS.get(rad["status"], rad["status"]),
     }

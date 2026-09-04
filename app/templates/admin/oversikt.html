@@ -19,6 +19,15 @@
   <form method="post" action="/admin/ordre/{{ o.id }}/skriv-ut" class="inline">
     <button type="submit" class="knapp">Skriv ut igjen</button>
   </form>
+  {# To trinn, ikke en dialogboks: forste trykk spor, andre sletter. En
+     dialog midt i et rush er verre enn et trykk til. #}
+  <form method="post" action="/admin/ordre/{{ o.id }}/slett" class="inline">
+    <button type="submit" class="knapp slett" data-sporsmal="Slett {{ o.dagsnummer }}?"
+            aria-label="Slett bestilling {{ o.dagsnummer }} for godt">
+      <svg class="ikon" aria-hidden="true"><use href="#soppel"></use></svg>
+      <span class="ord">Slett</span>
+    </button>
+  </form>
 {%- endmacro %}
 
 {% macro varelinje(rad) -%}
@@ -246,6 +255,30 @@
 
 {% block skript %}
 <script>
+// Slett i to trinn. Forste trykk gjor knappen til et sporsmal, andre sender.
+// Angrer man, forsvinner sporsmalet av seg selv etter fire sekunder.
+document.querySelectorAll("button.slett").forEach(knapp => {
+  const ord = knapp.querySelector(".ord");
+  const opprinnelig = ord.textContent;
+  let bevaepnet = false, klokke = null;
+
+  knapp.addEventListener("click", e => {
+    if (bevaepnet) return;                 // andre trykk: la skjemaet sendes
+    e.preventDefault();
+    bevaepnet = true;
+    knapp.classList.add("bevaepnet");
+    ord.textContent = knapp.dataset.sporsmal;
+    klokke = setTimeout(() => {
+      bevaepnet = false;
+      knapp.classList.remove("bevaepnet");
+      ord.textContent = opprinnelig;
+    }, 4000);
+  });
+
+  // Polling laster sida pa nytt nar noe endres; da skal ingen knapp sta armert.
+  window.addEventListener("beforeunload", () => clearTimeout(klokke));
+});
+
 // Polling framfor SSE: enklere, og taaler at nettet hikker. Sida lastes bare
 // pa nytt nar noe faktisk er endret, sa man ikke mister et knappetrykk.
 let forrigeSignatur = null;

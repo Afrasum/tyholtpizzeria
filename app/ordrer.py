@@ -21,21 +21,38 @@ from .db import naa, transaksjon
 # en ordre dit automatisk. En automatisk overgang etter 5 minutter ville tatt
 # nummeret av henteskjermen mens kunden er på vei bort til kassen — se
 # GAMMEL_ETTER_MIN, som bare farger raden i admin.
+# Forste oppforing er den forventede veien videre — den blir den rode knappen
+# i admin. Resten er sidespor OG angrevei: hver tilstand kan naa gaa tilbake
+# dit den kom fra. Et feiltrykk klokka 23 skal koste ett nytt trykk, ikke en
+# tur i basen.
 FLYT: dict[str, tuple[str, ...]] = {
     "ny": ("i_produksjon", "klar", "avbrutt"),
-    "i_produksjon": ("klar", "avbrutt"),
+    "i_produksjon": ("klar", "ny", "avbrutt"),
     "klar": ("levert", "forlatt", "i_produksjon", "avbrutt"),
-    "levert": (),
+    "levert": ("klar",),
     "forlatt": ("klar", "levert"),
     "avbrutt": ("ny",),
 }
 
+# Kjokkenets ord. Disse staar i admin, der «ny» betyr «ingen har tatt i den».
 STATUSNAVN: dict[str, str] = {
     "ny": "Ny",
     "i_produksjon": "I produksjon",
     "klar": "Klar til henting",
     "levert": "Levert",
     "forlatt": "Forlatt",
+    "avbrutt": "Avbrutt",
+}
+
+# Kundens ord. Samme tilstander, men fortalt slik de oppleves fra andre siden
+# av disken: hva har skjedd med MIN pizza. «Ny» sier ingenting til noen som
+# nettopp har betalt.
+KUNDESTATUS: dict[str, str] = {
+    "ny": "Bestilt",
+    "i_produksjon": "I ovnen",
+    "klar": "Klar til henting",
+    "levert": "Hentet",
+    "forlatt": "Ikke hentet",
     "avbrutt": "Avbrutt",
 }
 
@@ -171,6 +188,10 @@ def _neste_dagsnummer(kob: sqlite3.Connection, salgsdag_id: int) -> int:
     Starter på salgsdagens startnummer framfor 1 — et tosifret starttall ser
     ut som vi har holdt på en stund, og koster ingenting.
 
+    Telleren gaar bare oppover. sistenummer husker hoyeste utdelte nummer selv
+    etter at ordren er slettet — ellers ville en sletting frigjort nummeret til
+    neste kunde, og to esker samme kveld kunne baere samme tall.
+
     Trygg fordi kalleren holder BEGIN IMMEDIATE-låsen: to samtidige
     bestillinger kan ikke lese samme MAX. UNIQUE(salgsdag_id, dagsnummer) i
     schemaet er beltet i tillegg til bukseselene.
@@ -178,6 +199,7 @@ def _neste_dagsnummer(kob: sqlite3.Connection, salgsdag_id: int) -> int:
     rad = kob.execute(
         """
         SELECT s.startnummer AS start,
+               s.sistenummer AS sist,
                COALESCE(MAX(o.dagsnummer), 0) AS hoyeste
         FROM salgsdag s LEFT JOIN ordre o ON o.salgsdag_id = s.id
         WHERE s.id = ?
@@ -185,9 +207,17 @@ def _neste_dagsnummer(kob: sqlite3.Connection, salgsdag_id: int) -> int:
         (salgsdag_id,),
     ).fetchone()
 
-    neste = max(int(rad["hoyeste"]) + 1, int(rad["start"]))
+    def _merk(nummer: int) -> int:
+        """Skriv nummeret som utdelt for vi gir det fra oss."""
+        kob.execute(
+            "UPDATE salgsdag SET sistenummer = MAX(sistenummer, ?) WHERE id = ?",
+            (nummer, salgsdag_id),
+        )
+        return nummer
+
+    neste = max(int(rad["hoyeste"]) + 1, int(rad["sist"]) + 1, int(rad["start"]))
     if neste <= MAKS_DAGSNUMMER:
-        return neste
+        return _merk(neste)
 
     # Over 999: fire siffer blir for smått på 12 mm tape, så vi begynner
     # forfra på det laveste ledige. Vi kommer aldri hit på en kveld, men et
@@ -200,7 +230,7 @@ def _neste_dagsnummer(kob: sqlite3.Connection, salgsdag_id: int) -> int:
     }
     for kandidat in range(1, MAKS_DAGSNUMMER + 1):
         if kandidat not in brukte:
-            return kandidat
+            return _merk(kandidat)
     raise Avvist("Alle numre er brukt opp for i dag. Nullstill dagen i admin.")
 
 
@@ -423,6 +453,20 @@ def sett_betalt(ordre_id: int, betalt: bool, aktor: str = "admin") -> None:
         )
 
 
+def slett_ordre(ordre_id: int) -> bool:
+    """Fjern en enkelt ordre helt. Returnerer om det faktisk fantes en.
+
+    Til feilbestillinger og prøvetrykk: en ordre som aldri skulle eksistert
+    skal kunne forsvinne, ikke ligge igjen som «avbrutt» og stjele plass i
+    kjokkenkoen. Linjer, statuslogg og jobber folger med via ON DELETE CASCADE.
+
+    Nummeret gjenbrukes IKKE — telleren teller videre. To esker med samme
+    nummer samme kveld er en verre feil enn et hull i rekka.
+    """
+    with transaksjon() as kob:
+        return kob.execute("DELETE FROM ordre WHERE id = ?", (ordre_id,)).rowcount > 0
+
+
 def slett_dagens_ordrer(salgsdag_id: int) -> int:
     """Slett alle ordrer for en salgsdag. Returnerer antall slettede.
 
@@ -438,6 +482,12 @@ def slett_dagens_ordrer(salgsdag_id: int) -> int:
             "SELECT COUNT(*) AS n FROM ordre WHERE salgsdag_id = ?", (salgsdag_id,)
         ).fetchone()["n"]
         kob.execute("DELETE FROM ordre WHERE salgsdag_id = ?", (salgsdag_id,))
+        # Nullstilling betyr hele dagen om igjen, telleren inkludert — dette
+        # er knappen man bruker FOR service, ikke under. Aa slette EN ordre
+        # (slett_ordre) rorer bevisst ikke telleren.
+        kob.execute(
+            "UPDATE salgsdag SET sistenummer = 0 WHERE id = ?", (salgsdag_id,)
+        )
         return int(antall)
 
 

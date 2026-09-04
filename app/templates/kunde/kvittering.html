@@ -60,6 +60,10 @@
     <p class="total"><span>Å betale</span><span>{{ ordre.total_ore | kroner }}</span></p>
   </section>
 
+  {# Egen bestilling, ikke et tillegg til denne: hver bestilling far sitt
+     eget nummer og sin egen etikett. #}
+  <p class="mer"><a class="knapp" href="/">Bestill mer</a></p>
+
   {% if ordre.epost %}
     <p class="epost-kvittering">
       Bekreftelse er sendt til <b>{{ ordre.epost }}</b>. Du får en ny e-post

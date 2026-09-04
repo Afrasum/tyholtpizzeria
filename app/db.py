@@ -65,6 +65,10 @@ def transaksjon() -> Iterator[sqlite3.Connection]:
 # EXISTS rorer ikke en tabell som alt finnes, sa disse ma legges til for seg.
 TILLEGGSKOLONNER: tuple[tuple[str, str, str], ...] = (
     ("salgsdag", "startnummer", "INTEGER NOT NULL DEFAULT 1"),
+    # Hoyeste nummer som NOEN GANG er delt ut denne dagen. Staar her og ikke
+    # utledes fra ordre-tabellen, fordi en slettet ordre ellers ville frigjort
+    # nummeret sitt til neste kunde.
+    ("salgsdag", "sistenummer", "INTEGER NOT NULL DEFAULT 0"),
 )
 
 

@@ -149,6 +149,17 @@ h3 { font-size: 1.5rem; font-variation-settings: "opsz" 48; }
 
 .knapp.liten { min-height: 40px; padding: .45rem .95rem; font-size: .9rem; }
 
+.knapp .ikon { width: 1.15em; height: 1.15em; flex: 0 0 auto; }
+
+/* Slett er siste utvei, ikke en snarvei: dempet til den er armert. */
+.knapp.slett { color: var(--blekk-mild); }
+.knapp.slett:hover { border-color: var(--tomat); color: var(--tomat); }
+.knapp.slett.bevaepnet {
+  border-color: transparent;
+  background: var(--tomat);
+  color: var(--papir);
+}
+
 .knapp[disabled] {
   background: var(--blekk-svak);
   border-color: transparent;
@@ -660,7 +671,7 @@ small { display: block; margin-top: .4rem; font-size: .875rem; color: var(--blek
 
 /* ── Admin ────────────────────────────────────────────────────────────── */
 
-.admin { max-width: 74rem; padding-top: 2rem; }
+main.admin { max-width: 100rem; padding-top: 2rem; }
 
 .admin-topp {
   display: flex;
