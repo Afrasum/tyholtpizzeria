@@ -10,10 +10,13 @@ allergenlista et utkast, ikke en garanti.
 
 from __future__ import annotations
 
+import logging
 import sqlite3
 
 from . import allergener, ordrer
 from .db import naa, transaksjon
+
+logg = logging.getLogger("tyholt.seed")
 
 PRIS_ORE = 5900  # 59 kr flat for alle tre.
 
@@ -94,16 +97,17 @@ MENY: tuple[tuple[str, str, str, str, list[str], int], ...] = (
     ),
 )
 
-# Åpent 15:00–00:00, kun 4. og 5. september 2026.
+# Ett sammenhengende lop, ikke datoer.
 #
-# stenger står med vilje på 01:00, ikke 00:00. Blir det femten minutter på
-# overtid, skal ikke bestilling og admin falle sammen mens det står folk i
-# lokalet — og det finnes ingen vei til å utvide tiden fra admin. Den
-# manuelle stengt-bryteren er den EKTE stengingen; dette er bare slakken.
-SALGSDAGER: tuple[tuple[str, str, str], ...] = (
-    ("2026-09-04", "2026-09-04T15:00:00+02:00", "2026-09-05T01:00:00+02:00"),
-    ("2026-09-05", "2026-09-05T15:00:00+02:00", "2026-09-06T01:00:00+02:00"),
-)
+# Salgsdager var opprinnelig en rad per dato, med en teller som startet forfra
+# hver dag. Det kostet mer enn det smakte: en bestilling lagt inn for
+# apningstid havnet pa gardagens rad og forsvant fra bade admin og tavla i det
+# klokka slo over. Na finnes det noyaktig EN rad, og alt henger pa den.
+#
+# Kolonnene dato/apner/stenger star igjen i skjemaet fordi de er harmlose og
+# fordi a fjerne dem er en migrering uten gevinst. De brukes ikke til noe:
+# apningstiden er den manuelle bryteren i admin, og ingenting annet.
+LOPET = "lopende"
 
 INNSTILLINGER: dict[str, str] = {
     "manuelt_stengt": "0",
@@ -140,6 +144,66 @@ def _ingrediens(kob: sqlite3.Connection, navn: str, koder: list[str],
             (ingrediens_id, kode),
         )
     return ingrediens_id
+
+
+def _velg_lopet(kob) -> int:
+    """Peke ut den ene salgsdagsraden alt henger pa, og huske valget.
+
+    Rekkefolgen er hele poenget ved oppgradering fra dagsmodellen. Finnes det
+    alt ordrer, MA vi velge raden de ligger pa - ellers ville kveldens
+    bestillinger blitt usynlige i det denne koden ble tatt i bruk.
+
+      1. raden innstilling['salgsdag_id'] alt peker pa
+      2. raden den nyeste ordren ligger pa
+      3. den forste raden som finnes
+      4. en ny, hvis basen er helt fersk
+
+    Idempotent: kjores ved hver oppstart og velger samme rad hver gang.
+    """
+    rad = kob.execute(
+        "SELECT s.id FROM salgsdag s JOIN innstilling i"
+        " ON i.verdi = CAST(s.id AS TEXT) WHERE i.nokkel = 'salgsdag_id'"
+    ).fetchone()
+    if rad is None:
+        rad = kob.execute(
+            "SELECT salgsdag_id AS id FROM ordre ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+    if rad is None:
+        rad = kob.execute("SELECT id FROM salgsdag ORDER BY id LIMIT 1").fetchone()
+    if rad is None:
+        tid = naa()
+        markor = kob.execute(
+            """
+            INSERT INTO salgsdag (dato, apner, stenger, aktiv, startnummer)
+            VALUES (?, ?, ?, 1, ?)
+            """,
+            (LOPET, tid, tid, ordrer.tilfeldig_startnummer()),
+        )
+        lopet = int(markor.lastrowid)
+    else:
+        lopet = int(rad["id"])
+
+    kob.execute(
+        "INSERT INTO innstilling (nokkel, verdi, oppdatert)"
+        " VALUES ('salgsdag_id', ?, ?)"
+        " ON CONFLICT(nokkel) DO UPDATE SET verdi = excluded.verdi,"
+        " oppdatert = excluded.oppdatert",
+        (str(lopet), naa()),
+    )
+    # Logges fordi valget er det ene som kan ga galt ved oppgradering fra
+    # dagsmodellen: peker vi pa feil rad, blir eksisterende ordrer usynlige.
+    # Da skal det sta i loggen hvilken rad som ble valgt, ikke gjettes.
+    rad = kob.execute(
+        "SELECT dato, startnummer, sistenummer FROM salgsdag WHERE id = ?", (lopet,)
+    ).fetchone()
+    antall = kob.execute(
+        "SELECT COUNT(*) AS n FROM ordre WHERE salgsdag_id = ?", (lopet,)
+    ).fetchone()["n"]
+    logg.info(
+        "lopet er salgsdag %s (%s), start %s, sist utdelt %s, %s ordrer",
+        lopet, rad["dato"], rad["startnummer"], rad["sistenummer"], antall,
+    )
+    return lopet
 
 
 def kjor() -> None:
@@ -179,25 +243,7 @@ def kjor() -> None:
                     (rad["id"], ider[ingrediensnavn], i),
                 )
 
-        for dato, apner, stenger in SALGSDAGER:
-            # startnummer settes bare ved opprettelse. Ellers ville hver
-            # omstart trukket et nytt tall, og numrene hoppet midt i kvelden.
-            kob.execute(
-                """
-                INSERT INTO salgsdag (dato, apner, stenger, aktiv, startnummer)
-                VALUES (?, ?, ?, 1, ?)
-                ON CONFLICT(dato) DO UPDATE SET
-                    apner = excluded.apner,
-                    stenger = excluded.stenger,
-                    -- Bare hvis den aldri er satt. Tilfeldig gir alltid over
-                    -- 1, sa 1 betyr «kommer fra migreringens standardverdi».
-                    startnummer = CASE
-                        WHEN salgsdag.startnummer <= 1 THEN excluded.startnummer
-                        ELSE salgsdag.startnummer
-                    END
-                """,
-                (dato, apner, stenger, ordrer.tilfeldig_startnummer()),
-            )
+        _velg_lopet(kob)
 
         for i, (navn, nummer) in enumerate(VIPPS_MOTTAKERE):
             kob.execute(

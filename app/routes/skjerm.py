@@ -26,9 +26,7 @@ UNDER_ARBEID = ("ny", "i_produksjon")
 
 
 def _tall(kob) -> dict:
-    dag = ordrer.gjeldende_salgsdag(kob)
-    if dag is None:
-        return {"klare": [], "under_arbeid": []}
+    dag = ordrer.aktiv_salgsdag(kob)
     plassholdere = ",".join("?" * len(UNDER_ARBEID))
     under = [
         r["dagsnummer"]

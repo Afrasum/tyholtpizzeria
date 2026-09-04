@@ -290,9 +290,7 @@ def ny_vipps(
 def nullstill(_=Depends(auth.krev)):
     """Tom lista. Sletter ingenting — alt kan hentes tilbake fra angrelista."""
     with kobling() as kob:
-        dag = ordrer.gjeldende_salgsdag(kob)
-    if dag is None:
-        return RedirectResponse("/admin", status_code=303)
+        dag = ordrer.aktiv_salgsdag(kob)
     antall = ordrer.skjul_alle(dag["id"])
     return RedirectResponse(f"/admin?ryddet={antall}", status_code=303)
 

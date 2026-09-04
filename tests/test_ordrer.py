@@ -26,28 +26,6 @@ def _oppsett(tmp_path, monkeypatch):
     return db
 
 
-def _apen_tid():
-    """Et tidspunkt inne i salgsdagen 4. september."""
-    return datetime.fromisoformat("2026-09-04T18:00:00+02:00")
-
-
-def _tving_apent(db):
-    """Flytt salgsdagen slik at «nå» er inne i den, uansett når testen kjører."""
-    from app import config
-
-    nu = datetime.now(config.TIDSSONE)
-    with db.transaksjon() as kob:
-        kob.execute("UPDATE salgsdag SET aktiv = 0")
-        kob.execute(
-            "UPDATE salgsdag SET aktiv = 1, apner = ?, stenger = ? WHERE dato = ?",
-            (
-                nu.replace(hour=0, minute=1).isoformat(timespec="seconds"),
-                nu.replace(hour=23, minute=59).isoformat(timespec="seconds"),
-                "2026-09-04",
-            ),
-        )
-
-
 def _meny_id(db, slug):
     with db.kobling() as kob:
         return kob.execute(
@@ -83,7 +61,6 @@ def test_alle_pizzaer_inneholder_gluten_fra_deigen(tmp_path, monkeypatch):
 def test_dagsnummer_okes_med_en(tmp_path, monkeypatch):
     """Startnummeret er tilfeldig, men stigningen skal vaere nøyaktig en."""
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app.ordrer import Onske, opprett
 
     eid = _meny_id(db, "margherita")
@@ -99,7 +76,6 @@ def test_en_etikett_per_pizza_i_en_strimmeljobb(tmp_path, monkeypatch):
     så alle etikettene i en ordre printes sammenhengende.
     """
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app.ordrer import Onske, opprett
 
     res = opprett(
@@ -129,7 +105,6 @@ def test_en_etikett_per_pizza_i_en_strimmeljobb(tmp_path, monkeypatch):
 
 def test_utsolgt_avvises(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     import pytest
 
     from app.ordrer import Avvist, Onske, opprett
@@ -143,7 +118,6 @@ def test_utsolgt_avvises(tmp_path, monkeypatch):
 
 def test_stengt_avvises_og_gir_ingen_ordre(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     import pytest
 
     from app.ordrer import Avvist, Onske, opprett
@@ -158,7 +132,6 @@ def test_stengt_avvises_og_gir_ingen_ordre(tmp_path, monkeypatch):
 
 def test_tom_korg_og_tomt_navn_avvises(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     import pytest
 
     from app.ordrer import Avvist, Onske, opprett
@@ -172,7 +145,6 @@ def test_tom_korg_og_tomt_navn_avvises(tmp_path, monkeypatch):
 
 def test_statusflyt_tillater_lovlig_og_avviser_ulovlig(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     import pytest
 
     from app.ordrer import Avvist, Onske, opprett, sett_status
@@ -199,7 +171,6 @@ def test_statusflyt_tillater_lovlig_og_avviser_ulovlig(tmp_path, monkeypatch):
 
 def test_klar_koer_epost_bare_naar_epost_er_oppgitt(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app.ordrer import Onske, opprett, sett_status
 
     eid = _meny_id(db, "margherita")
@@ -224,7 +195,6 @@ def test_klar_koer_epost_bare_naar_epost_er_oppgitt(tmp_path, monkeypatch):
 
 def test_betalt_er_uavhengig_av_status(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app.ordrer import Onske, opprett, sett_betalt
 
     res = opprett("Afras", None, [Onske(_meny_id(db, "margherita"), 1)])
@@ -238,7 +208,6 @@ def test_betalt_er_uavhengig_av_status(tmp_path, monkeypatch):
 
 def test_henteskjerm_viser_bare_klare_numre(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app import ordrer
     from app.ordrer import Onske, opprett, sett_status
 
@@ -257,7 +226,6 @@ def test_henteskjerm_viser_bare_klare_numre(tmp_path, monkeypatch):
 
 def test_snapshot_beskytter_mot_prisendring_underveis(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app.ordrer import Onske, opprett
 
     eid = _meny_id(db, "margherita")
@@ -277,7 +245,6 @@ def test_snapshot_beskytter_mot_prisendring_underveis(tmp_path, monkeypatch):
 
 def test_maks_10_pizzaer_per_bestilling(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     import pytest
 
     from app.ordrer import Avvist, Onske, opprett
@@ -290,7 +257,6 @@ def test_maks_10_pizzaer_per_bestilling(tmp_path, monkeypatch):
 
 def test_forlatt_kan_settes_manuelt_og_angres(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app.ordrer import Onske, opprett, sett_status
 
     res = opprett("Afras", None, [Onske(_meny_id(db, "margherita"), 1)])
@@ -303,7 +269,6 @@ def test_forlatt_kan_settes_manuelt_og_angres(tmp_path, monkeypatch):
 
 def test_forlatt_fjerner_nummeret_fra_henteskjermen(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app import ordrer
     from app.ordrer import Onske, opprett, sett_status
 
@@ -323,7 +288,6 @@ def test_nummeret_er_delt_paa_tvers_av_pizzatyper(tmp_path, monkeypatch):
     som er én mer enn forrige bestilling uansett hva den inneholdt.
     """
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app.ordrer import Onske, opprett
 
     m = _meny_id(db, "margherita")
@@ -354,7 +318,6 @@ def test_nummeret_er_delt_paa_tvers_av_pizzatyper(tmp_path, monkeypatch):
 def test_slett_alt_tommer_basen_og_stiller_telleren_tilbake(tmp_path, monkeypatch):
     """«Slett databasen» skal ikke etterlate loese linjer eller jobber."""
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app import ordrer
     from app.ordrer import Onske, opprett
 
@@ -363,7 +326,7 @@ def test_slett_alt_tommer_basen_og_stiller_telleren_tilbake(tmp_path, monkeypatc
         opprett("Tester", "a@example.com", [Onske(eid, 2)])
 
     with db.kobling() as kob:
-        dag = ordrer.gjeldende_salgsdag(kob)
+        dag = ordrer.aktiv_salgsdag(kob)
         assert kob.execute("SELECT COUNT(*) c FROM ordrelinje").fetchone()["c"] == 3
         assert kob.execute("SELECT COUNT(*) c FROM jobb").fetchone()["c"] == 6
 
@@ -454,7 +417,6 @@ def test_skjermen_viser_nye_ordrer_som_under_arbeid(tmp_path, monkeypatch):
     fordi kjokkenet ikke har trykket «i produksjon» ennaa.
     """
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app.routes.skjerm import _tall
     from app.ordrer import Onske, opprett, sett_status
 
@@ -481,7 +443,6 @@ def test_skjermen_viser_nye_ordrer_som_under_arbeid(tmp_path, monkeypatch):
 
 def test_skjul_ordre_tar_den_ut_av_flatene_men_beholder_raden(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app import ordrer
     from app.ordrer import Onske, opprett, skjul_ordre
 
@@ -528,7 +489,6 @@ def test_skjul_ordre_tar_den_ut_av_flatene_men_beholder_raden(tmp_path, monkeypa
 def test_skjult_ordre_stopper_koen_og_slutter_a_mase(tmp_path, monkeypatch):
     """En fjernet ordre skal ikke printes, og ikke staa igjen i feilbanneret."""
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app import jobber
     from app.ordrer import Onske, opprett, skjul_ordre
 
@@ -563,7 +523,6 @@ def test_slett_ordre_fjerner_raden_men_frigir_ikke_nummeret(tmp_path, monkeypatc
     aldri skal kunne gjore, sa selv en permanent sletting lar telleren staa.
     """
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app import ordrer
     from app.ordrer import Onske, opprett, slett_ordre
 
@@ -596,7 +555,6 @@ def test_slett_ordre_fjerner_raden_men_frigir_ikke_nummeret(tmp_path, monkeypatc
 def test_solgte_pizzaer_teller_skjulte_men_ikke_avbrutte(tmp_path, monkeypatch):
     """Salgstallet skal ikke telle nedover naar leverte ordrer ryddes vekk."""
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app import ordrer
     from app.ordrer import Onske, opprett
 
@@ -631,7 +589,6 @@ def test_solgte_pizzaer_teller_skjulte_men_ikke_avbrutte(tmp_path, monkeypatch):
 def test_for_admin_gir_eldste_ordre_forst(tmp_path, monkeypatch):
     """Nye ordrer skal legge seg nederst, ikke skyve radene under fingeren."""
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app import ordrer
     from app.ordrer import Onske, opprett
 
@@ -645,7 +602,6 @@ def test_for_admin_gir_eldste_ordre_forst(tmp_path, monkeypatch):
 def test_nullstill_dagen_tommer_lista_uten_a_slette_noe(tmp_path, monkeypatch):
     """Den andre knappen: blank flate, men alt ligger der og kan hentes tilbake."""
     db = _oppsett(tmp_path, monkeypatch)
-    _tving_apent(db)
     from app import jobber, ordrer
     from app.ordrer import Onske, opprett
 
@@ -657,7 +613,7 @@ def test_nullstill_dagen_tommer_lista_uten_a_slette_noe(tmp_path, monkeypatch):
     ordrer.sett_status(sist["ordre_id"], "klar")
 
     with db.kobling() as kob:
-        dag = ordrer.gjeldende_salgsdag(kob)
+        dag = ordrer.aktiv_salgsdag(kob)
         assert len(ordrer.for_admin(kob)) == 4
         assert ordrer.klare_numre(kob) == [sist["nummer"]]
 
@@ -672,7 +628,10 @@ def test_nullstill_dagen_tommer_lista_uten_a_slette_noe(tmp_path, monkeypatch):
         assert kob.execute("SELECT COUNT(*) c FROM ordre").fetchone()["c"] == 4
         assert kob.execute("SELECT COUNT(*) c FROM ordrelinje").fetchone()["c"] == 4
         assert len(ordrer.skjulte_for_admin(kob)) == 4
-        assert ordrer.solgte_pizzaer(kob) == 4, "salgstallet staar"
+        # «Nullstill dagen» ER startpunktet for tellinga, sa den skal na null.
+        # Aa skjule EN ordre gjor ikke det — se
+        # test_solgte_pizzaer_teller_skjulte_men_ikke_avbrutte.
+        assert ordrer.solgte_pizzaer(kob) == 0, "ny dag begynner pa null"
 
     # Ingen etikett skal komme ut av en ordre som nettopp ble ryddet vekk ...
     with db.kobling() as kob:

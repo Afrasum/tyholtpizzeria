@@ -79,49 +79,32 @@ class Onske:
 # ── Salgsdag ────────────────────────────────────────────────────────────────
 
 
-def aapen_salgsdag(kob: sqlite3.Connection, tid: datetime | None = None) -> sqlite3.Row | None:
-    """Salgsdagen vi er inne i nå, eller None hvis det er stengt.
-
-    Sammenligner ISO-8601-strenger med tidssone direkte. Det er trygt her
-    fordi alle rader skrives i samme sone med samme format, så leksikografisk
-    rekkefølge er kronologisk rekkefølge.
-    """
-    nu = (tid or datetime.now(config.TIDSSONE)).isoformat(timespec="seconds")
-    return kob.execute(
-        """
-        SELECT * FROM salgsdag
-        WHERE aktiv = 1 AND apner <= ? AND stenger >= ?
-        ORDER BY apner LIMIT 1
-        """,
-        (nu, nu),
-    ).fetchone()
-
-
 def tilfeldig_startnummer() -> int:
     """Et tosifret starttall. Ser bedre ut enn å rope opp «nummer 1»."""
     return random.randint(11, 47)
 
 
-def gjeldende_salgsdag(
-    kob: sqlite3.Connection, tid: datetime | None = None
-) -> sqlite3.Row | None:
-    """Den åpne salgsdagen, ellers den siste som har BEGYNT.
+def aktiv_salgsdag(kob: sqlite3.Connection) -> sqlite3.Row:
+    """Raden alt henger pa. Det er alltid noyaktig en.
 
-    «Som har begynt» er hele poenget. Naiv nyeste-dag-først gir salgsdag 2 så
-    snart den er seedet, og da skjer to ting: under rigging klokka 14:00 den
-    4. viser admin en tom tabell, og klokka 00:00:01 den 5. forsvinner hver
-    ordre som fortsatt er klar eller i produksjon — fra admin OG fra
-    henteskjermen. Vi stenger ved midnatt, så det er nøyaktig da det er
-    garantert at det står upplukkede pizzaer i hylla.
+    Salgsdager var opprinnelig datoer, med en teller som startet forfra hver
+    dag. Det kostet mer enn det smakte: en bestilling lagt inn for apningstid
+    havnet pa gardagens dag og forsvant fra bade admin og tavla i det klokka
+    slo. Na er det ett sammenhengende lop. Nummer 46 er nummer 46 hele
+    arrangementet igjennom, og ingenting bytter dag under foettene pa noen.
+
+    Hvilken rad som er den aktive avgjores en gang, av seed.kjor(), og huskes
+    i innstilling. Her leser vi den bare.
     """
-    aapen = aapen_salgsdag(kob, tid)
-    if aapen is not None:
-        return aapen
-    nu = (tid or datetime.now(config.TIDSSONE)).isoformat(timespec="seconds")
-    return kob.execute(
-        "SELECT * FROM salgsdag WHERE apner <= ? ORDER BY apner DESC LIMIT 1",
-        (nu,),
+    rad = kob.execute(
+        "SELECT s.* FROM salgsdag s JOIN innstilling i ON i.verdi = CAST(s.id AS TEXT)"
+        " WHERE i.nokkel = 'salgsdag_id'"
     ).fetchone()
+    if rad is not None:
+        return rad
+    # Ingen peker satt enna (fersk base, eller kalt for seed). Forste rad er
+    # riktig svar i begge tilfeller.
+    return kob.execute("SELECT * FROM salgsdag ORDER BY id LIMIT 1").fetchone()
 
 
 def _manuelt_stengt(kob: sqlite3.Connection) -> bool:
@@ -134,46 +117,12 @@ def _manuelt_stengt(kob: sqlite3.Connection) -> bool:
 def kan_bestille(kob: sqlite3.Connection) -> tuple[bool, str]:
     """(åpent, begrunnelse). Begrunnelsen vises til kunden når det er stengt.
 
-    ÉN sperre, og bare én: den manuelle bryteren i admin. Klokka er med vilje
-    IKKE med her.
-
-    Grunnen er drift. Var åpningstiden en kodet sperre, kunne vi ikke testet
-    dagen før, og et kvarter på overtid krevde SQL for å redde. Nå er
-    åpningstiden noe menneskene passer på, og systemet gjør som det blir
-    fortalt. Salgsdagene finnes fortsatt, men bare til nummerering.
+    ÉN sperre, og bare én: den manuelle bryteren i admin. Klokka har aldri
+    vaert med her, og na finnes det ikke apningstider i basen heller.
     """
     if _manuelt_stengt(kob):
         return False, "Vi har midlertidig stengt for bestilling."
     return True, ""
-
-
-def salgsdag_for_ordre(kob: sqlite3.Connection, tid: datetime | None = None) -> sqlite3.Row:
-    """Salgsdagen en ny ordre skal nummereres under.
-
-    Rekkefølgen: åpen dag, ellers siste dag som har begynt, ellers lages en
-    dag for datoen i dag. Siste ledd gjør at testbestillinger dagen før havner
-    på sin egen teller og ikke spiser numre fra kvelden det gjelder.
-    """
-    dag = gjeldende_salgsdag(kob, tid)
-    if dag is not None:
-        return dag
-
-    nu = tid or datetime.now(config.TIDSSONE)
-    dato = nu.date().isoformat()
-    kob.execute(
-        """
-        INSERT INTO salgsdag (dato, apner, stenger, aktiv, startnummer)
-        VALUES (?, ?, ?, 1, ?)
-        ON CONFLICT(dato) DO NOTHING
-        """,
-        (
-            dato,
-            nu.replace(hour=0, minute=0, second=0).isoformat(timespec="seconds"),
-            nu.replace(hour=23, minute=59, second=59).isoformat(timespec="seconds"),
-            tilfeldig_startnummer(),
-        ),
-    )
-    return kob.execute("SELECT * FROM salgsdag WHERE dato = ?", (dato,)).fetchone()
 
 
 # ── Opprettelse ─────────────────────────────────────────────────────────────
@@ -275,7 +224,7 @@ def opprett(
         if not aapent:
             raise Avvist(grunn)
 
-        dag = salgsdag_for_ordre(kob)
+        dag = aktiv_salgsdag(kob)
 
         # Les menyen inne i transaksjonen. Blir en pizza utsolgt i samme
         # øyeblikk, skal denne bestillingen se det.
@@ -545,6 +494,23 @@ def skjul_alle(salgsdag_id: int) -> int:
             " opprettet) VALUES (?, NULL, 'skjult', 'admin', ?)",
             [(i, tid) for i in ider],
         )
+        # Startpunktet for «N pizzaer». Se solgte_pizzaer: nar lopet er
+        # sammenhengende, er det dette trykket som markerer «ny dag».
+        #
+        # Vi husker hoyeste ordre-id, ikke et tidspunkt. naa() har bare
+        # sekundopplosning, sa en bestilling som lander i SAMME sekund som
+        # noen trykker nullstill ville blitt talt med pa feil side. Id-er er
+        # monotone og entydige.
+        hoyeste = kob.execute(
+            "SELECT COALESCE(MAX(id), 0) AS n FROM ordre"
+        ).fetchone()["n"]
+        kob.execute(
+            "INSERT INTO innstilling (nokkel, verdi, oppdatert)"
+            " VALUES ('nullstilt_til_ordre', ?, ?)"
+            " ON CONFLICT(nokkel) DO UPDATE SET verdi = excluded.verdi,"
+            " oppdatert = excluded.oppdatert",
+            (str(hoyeste), tid),
+        )
         return len(ider)
 
 
@@ -584,9 +550,7 @@ def med_linjer(kob: sqlite3.Connection, ordre_id: int) -> dict | None:
 
 
 def for_admin(
-    kob: sqlite3.Connection,
-    salgsdag_id: int | None = None,
-    tid: datetime | None = None,
+    kob: sqlite3.Connection, salgsdag_id: int | None = None
 ) -> list[dict]:
     """Alle synlige ordrer for admin, ELDSTE forst, med linjer og printstatus.
 
@@ -595,10 +559,7 @@ def for_admin(
     nummer 48 landet pa nummer 49. Nederst legger de seg uten a flytte noe.
     """
     if salgsdag_id is None:
-        dag = gjeldende_salgsdag(kob, tid)
-        salgsdag_id = dag["id"] if dag else None
-    if salgsdag_id is None:
-        return []
+        salgsdag_id = aktiv_salgsdag(kob)["id"]
 
     ordrer = list(
         kob.execute(
@@ -630,9 +591,7 @@ def for_admin(
 
 
 def skjulte_for_admin(
-    kob: sqlite3.Connection,
-    salgsdag_id: int | None = None,
-    tid: datetime | None = None,
+    kob: sqlite3.Connection, salgsdag_id: int | None = None
 ) -> list[dict]:
     """De skjulte ordrene, til angrelista i admin.
 
@@ -640,10 +599,7 @@ def skjulte_for_admin(
     trygt aa gjoere naar veien tilbake staar rett under lista.
     """
     if salgsdag_id is None:
-        dag = gjeldende_salgsdag(kob, tid)
-        salgsdag_id = dag["id"] if dag else None
-    if salgsdag_id is None:
-        return []
+        salgsdag_id = aktiv_salgsdag(kob)["id"]
     return [
         {"ordre": o}
         for o in kob.execute(
@@ -655,43 +611,42 @@ def skjulte_for_admin(
 
 
 def solgte_pizzaer(
-    kob: sqlite3.Connection,
-    salgsdag_id: int | None = None,
-    tid: datetime | None = None,
+    kob: sqlite3.Connection, salgsdag_id: int | None = None
 ) -> int:
-    """Antall pizzaer solgt i dag — skjulte ordrer TELLER MED.
+    """Antall pizzaer solgt siden sist «Nullstill dagen».
 
-    Summeres ikke over admin-tabellen, for den utelater de skjulte. Gjorde vi
-    det, ville tellinga gatt nedover mot null etter hvert som leverte ordrer
-    ble ryddet vekk i lopet av kvelden.
+    Skjulte ordrer TELLER MED. Summeres ikke over admin-tabellen, for den
+    utelater dem, og da ville tallet gatt nedover mot null etter hvert som
+    leverte ordrer ble ryddet vekk i lopet av kvelden.
+
+    Nar lopet er sammenhengende trengs et startpunkt, og «Nullstill dagen» er
+    det: den setter tidsstempelet dette teller fra. Har den aldri vaert
+    trykket, telles alt.
     """
     if salgsdag_id is None:
-        dag = gjeldende_salgsdag(kob, tid)
-        salgsdag_id = dag["id"] if dag else None
-    if salgsdag_id is None:
-        return 0
+        salgsdag_id = aktiv_salgsdag(kob)["id"]
+    fra = kob.execute(
+        "SELECT verdi FROM innstilling WHERE nokkel = 'nullstilt_til_ordre'"
+    ).fetchone()
     rad = kob.execute(
         """
         SELECT COALESCE(SUM(l.antall), 0) AS n
         FROM ordrelinje l JOIN ordre o ON o.id = l.ordre_id
         WHERE o.salgsdag_id = ? AND o.status != 'avbrutt'
+          AND o.id > ?
         """,
-        (salgsdag_id,),
+        (salgsdag_id, int(fra["verdi"]) if fra else 0),
     ).fetchone()
     return int(rad["n"])
 
 
-def klare_numre(
-    kob: sqlite3.Connection, tid: datetime | None = None
-) -> list[int]:
+def klare_numre(kob: sqlite3.Connection) -> list[int]:
     """Numre som venter på å hentes. Til henteskjermen — kun tall, ingen navn.
 
-    Bruker gjeldende_salgsdag, ikke aapen_salgsdag: stenger vi midt i at noen
-    venter, skal nummeret deres bli stående til noen faktisk trykker levert.
+    Ingenting faller av tavla av seg selv. Et nummer star til noen faktisk
+    trykker levert - ogsa etter stengetid, ogsa dagen etter.
     """
-    dag = gjeldende_salgsdag(kob, tid)
-    if dag is None:
-        return []
+    dag = aktiv_salgsdag(kob)
     return [
         r["dagsnummer"]
         for r in kob.execute(
