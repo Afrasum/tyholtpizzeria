@@ -599,13 +599,25 @@ def for_admin(
     return ut
 
 
+# Hvor mange skjulte ordrer angrelista viser. Den skal vaere en angrelista,
+# ikke et arkiv: naa som hver levering skjuler raden sin, ville en ulimitert
+# liste vokst gjennom hele kvelden — og blitt sendt pa nytt hvert fjerde
+# sekund. Er det noe eldre man vil ha tilbake, ligger det i basen.
+SKJULTE_I_LISTA = 25
+
+
 def skjulte_for_admin(
-    kob: sqlite3.Connection, salgsdag_id: int | None = None
+    kob: sqlite3.Connection,
+    salgsdag_id: int | None = None,
+    grense: int = SKJULTE_I_LISTA,
 ) -> list[dict]:
-    """De skjulte ordrene, til angrelista i admin.
+    """De sist skjulte ordrene, til angrelista i admin.
 
     Finnes fordi kryss-knappen er ETT trykk uten bekreftelse. Det er den bare
     trygt aa gjoere naar veien tilbake staar rett under lista.
+
+    Nyeste forst: den man nettopp bomma pa skal ligge oeverst, ikke bak
+    kveldens leveringer.
     """
     if salgsdag_id is None:
         salgsdag_id = aktiv_salgsdag(kob)["id"]
@@ -613,10 +625,22 @@ def skjulte_for_admin(
         {"ordre": o}
         for o in kob.execute(
             "SELECT * FROM ordre WHERE salgsdag_id = ? AND skjult = 1"
-            " ORDER BY dagsnummer ASC",
-            (salgsdag_id,),
+            " ORDER BY dagsnummer DESC LIMIT ?",
+            (salgsdag_id, grense),
         )
     ]
+
+
+def antall_skjulte(
+    kob: sqlite3.Connection, salgsdag_id: int | None = None
+) -> int:
+    """Hele tallet, ogsaa det angrelista ikke rekker aa vise."""
+    if salgsdag_id is None:
+        salgsdag_id = aktiv_salgsdag(kob)["id"]
+    return kob.execute(
+        "SELECT COUNT(*) AS n FROM ordre WHERE salgsdag_id = ? AND skjult = 1",
+        (salgsdag_id,),
+    ).fetchone()["n"]
 
 
 def solgte_pizzaer(

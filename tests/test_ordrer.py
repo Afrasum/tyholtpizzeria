@@ -285,6 +285,55 @@ def test_levert_krever_at_ordren_er_betalt(tmp_path, monkeypatch):
     assert sett_status(oid, "levert")["status"] == "levert"
 
 
+def test_levert_tar_ordren_ut_av_lista(tmp_path, monkeypatch):
+    """Esken er ute av doera, sa raden skal ut av koen — men ikke tapt.
+
+    Tester ruta og ikke sett_status: dette er en arbeidsflyt-regel i admin,
+    ikke en regel i tilstandsmaskinen. sett_status skal fortsatt kunne sette
+    «levert» uten at noe forsvinner (det er den test_lopet lener seg pa).
+    """
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import ordrer
+    from app.ordrer import Onske, opprett, sett_betalt, sett_status
+    from app.routes.admin import endre_status
+
+    eid = _meny_id(db, "margherita")
+    res = opprett("Afras", None, [Onske(eid, 1)])
+    oid = res["ordre_id"]
+    sett_status(oid, "klar")
+    sett_betalt(oid, True)
+
+    endre_status(oid, ny="levert", _=None)
+
+    with db.kobling() as kob:
+        assert [r["ordre"]["id"] for r in ordrer.for_admin(kob)] == []
+        assert [r["ordre"]["id"] for r in ordrer.skjulte_for_admin(kob)] == [oid]
+
+    # Angreveien: hent tilbake, og «Klar til henting» skal ikke skjule pa nytt.
+    ordrer.skjul_ordre(oid, skjult=False)
+    endre_status(oid, ny="klar", _=None)
+    with db.kobling() as kob:
+        assert [r["ordre"]["id"] for r in ordrer.for_admin(kob)] == [oid]
+
+
+def test_angrelista_viser_nyeste_forst_og_har_tak(tmp_path, monkeypatch):
+    """Angrelista skal vaere en angrelista, ikke kveldens arkiv."""
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import ordrer
+    from app.ordrer import Onske, opprett
+
+    eid = _meny_id(db, "margherita")
+    ider = [opprett(f"K{i}", None, [Onske(eid, 1)])["ordre_id"] for i in range(6)]
+    for oid in ider:
+        ordrer.skjul_ordre(oid)
+
+    with db.kobling() as kob:
+        assert ordrer.antall_skjulte(kob) == 6
+        vist = [r["ordre"]["id"] for r in ordrer.skjulte_for_admin(kob, grense=4)]
+
+    assert vist == list(reversed(ider))[:4], "nyeste forst, og bare sa mange som taket"
+
+
 def test_forlatt_kan_settes_manuelt_og_angres(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
     from app.ordrer import Onske, opprett, sett_betalt, sett_status

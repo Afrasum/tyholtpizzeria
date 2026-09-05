@@ -85,6 +85,7 @@ def _arbeidsflate(kob) -> dict:
             l["antall"] for rad in rader for l in rad["linjer"]
         ),
         "skjulte": ordrer.skjulte_for_admin(kob),
+        "antall_skjulte": ordrer.antall_skjulte(kob),
         "statusnavn": ordrer.STATUSNAVN,
         "flyt": ordrer.FLYT,
         "feilede": jobber.feilede(),
@@ -217,9 +218,22 @@ def data(_=Depends(auth.krev)):
 @ruter.post("/ordre/{ordre_id}/status")
 def endre_status(ordre_id: int, ny: str = Form(...), _=Depends(auth.krev)):
     try:
-        ordrer.sett_status(ordre_id, ny)
+        ordre = ordrer.sett_status(ordre_id, ny)
     except ordrer.Avvist:
-        pass  # Knappen er alt borte i UI-et; en dobbelttrykk skal ikke feile stygt.
+        # Knappen er alt borte i UI-et; en dobbelttrykk skal ikke feile stygt.
+        return RedirectResponse("/admin", status_code=303)
+
+    # Levert = esken er ute av doera, og da skal raden ut av lista. Ellers
+    # vokser koen med ting som er ferdige, og tallet over lista slutter a bety
+    # noe utover kvelden.
+    #
+    # Den er ikke tapt: «Skjulte» rett under lista henter den tilbake, og
+    # derfra staar «Klar til henting» som angreknapp.
+    #
+    # Ser pa den returnerte raden framfor `ny`, sa et angretrykk tilbake til
+    # «Klar» ikke ogsaa skjuler ordren.
+    if ordre["status"] == "levert":
+        ordrer.skjul_ordre(ordre_id)
     return RedirectResponse("/admin", status_code=303)
 
 

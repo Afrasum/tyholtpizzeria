@@ -101,7 +101,7 @@
    hatt en bekreftelse — som er nettopp det vi ikke vil ha midt i et rush. #}
 {% if skjulte %}
 <details class="skjulte">
-  <summary>Skjulte ({{ skjulte | length }})</summary>
+  <summary>Skjulte ({{ antall_skjulte }})</summary>
   <ul>
     {% for rad in skjulte %}
     <li>
@@ -113,6 +113,9 @@
       </form>
     </li>
     {% endfor %}
+    {% if antall_skjulte > skjulte | length %}
+    <li class="flere">… og {{ antall_skjulte - skjulte | length }} eldre, som ligger i basen</li>
+    {% endif %}
   </ul>
 </details>
 {% endif %}

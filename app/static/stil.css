@@ -1124,3 +1124,4 @@ body.skjerm { background: var(--fersken); color: var(--blekk); }
 .skjulte .nr { font-family: var(--mono); font-weight: 700; font-size: 1.25rem; color: var(--blekk); }
 .skjulte .navn { flex: 1; font-family: var(--skilt); font-variation-settings: "opsz" 24; }
 .skjulte .status { font-size: .875rem; }
+.skjulte .flere { justify-content: center; border-style: dashed; color: var(--blekk-svak); font-size: .875rem; }
