@@ -784,14 +784,15 @@ main.admin { max-width: 100rem; padding-top: 2rem; }
 /* Sperret, ikke ulovlig. Den blir en ekte knapp i samme oyeblikk «Marker
    betalt» er trykket, sa den skal si hva som mangler framfor a se tom ut. */
 .knapp.steg.av.sperret {
+  flex-direction: column;   /* .knapp er inline-flex: uten dette blir grunnen
+                               liggende ved siden av ordet og bloese ut ruta */
+  gap: .1rem;
   border-style: solid;
   border-color: var(--tomat);
   color: var(--tomat);
   line-height: 1.1;
 }
 .knapp.steg.av.sperret small {
-  display: block;
-  margin-top: .15rem;
   font-size: .68rem;
   font-weight: 400;
   color: var(--blekk-mild);
