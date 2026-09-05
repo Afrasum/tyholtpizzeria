@@ -34,9 +34,13 @@
 
      «I lista» og ikke «venter»: lista rommer ogsaa forlatte og avbrutte. #}
   {% if rader %}
+  {# default() av samme grunn som under «Skjulte»: ny mal kan rekke aa kjore
+     mot gammel admin.py i vinduet mellom pull og restart. #}
+  {% set antall = i_lista | default(rader | length, true) %}
+  {% set pizzaer = pizzaer_i_lista | default(0, true) %}
   <p class="i-lista">
-    <b>{{ i_lista }}</b> bestilling{{ "er" if i_lista != 1 }}
-    · <b>{{ pizzaer_i_lista }}</b> pizza{{ "er" if pizzaer_i_lista != 1 }} i lista
+    <b>{{ antall }}</b> bestilling{{ "er" if antall != 1 }}{% if pizzaer %}
+    · <b>{{ pizzaer }}</b> pizza{{ "er" if pizzaer != 1 }}{% endif %} i lista
   </p>
   {% endif %}
 
@@ -100,8 +104,12 @@
 {# Angrelista. Uten den ville krysset vaert et ettklikks tap, og da matte det
    hatt en bekreftelse — som er nettopp det vi ikke vil ha midt i et rush. #}
 {% if skjulte %}
+{# default(): malene hot-reloader, Python-koden gjor det ikke. Etter en pull og
+   for en restart kjorer altsaa NY mal mot GAMMEL admin.py, og da finnes ikke
+   antall_skjulte enda. Uten dette tar hele dashbordet 500 i det vinduet. #}
+{% set skjult_total = antall_skjulte | default(skjulte | length, true) %}
 <details class="skjulte">
-  <summary>Skjulte ({{ antall_skjulte }})</summary>
+  <summary>Skjulte ({{ skjult_total }})</summary>
   <ul>
     {% for rad in skjulte %}
     <li>
@@ -113,8 +121,8 @@
       </form>
     </li>
     {% endfor %}
-    {% if antall_skjulte > skjulte | length %}
-    <li class="flere">… og {{ antall_skjulte - skjulte | length }} eldre, som ligger i basen</li>
+    {% if skjult_total > skjulte | length %}
+    <li class="flere">… og {{ skjult_total - skjulte | length }} eldre, som ligger i basen</li>
     {% endif %}
   </ul>
 </details>
