@@ -29,6 +29,17 @@ MARG = 8            # px, luft i hver ende av tapen
 # Settes per menyelement i basen; dette er bare fallback.
 FORKORTELSER = {"margherita": "M", "skinke": "S", "paere": "P"}
 
+# En hilsen pa esken. To linjer framfor en: da koster den bredden av
+# «Velkommen» og ikke av hele setningen — og med QR pa hver etikett
+# (QR_BARE_FORSTE=0) betales den bredden en gang per pizza.
+HILSEN = ("Velkommen", "tilbake")
+HILSEN_PT = 14      # malt binarisert: 13 blir tynn, 16 koster tape uten
+                    # aa bli lettere aa lese
+HILSEN_AVSTAND = 11 # px fra midtlinja til hver av de to linjene
+
+LUFT = 10           # px mellom tekstkolonner
+LUFT_QR = 12        # px for QR-en, som taaler litt mer
+
 # Fet skrift er ikke pynt her — tynne streker forsvinner i binariseringen.
 FONTKANDIDATER = (
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",       # Debian/rpi5
@@ -182,19 +193,24 @@ def _tegn(
 
     Layout, venstre mot høyre:
 
-        ┌────────────────────────────────────┐
-        │  M4    Afras            [QR]       │   ← stort: type + nummer
-        │        1/2                         │   ← lite: navn og teller
-        └────────────────────────────────────┘
+        ┌──────────────────────────────────────────┐
+        │  M4    Afras   Velkommen        [QR]     │   ← stort: type + nummer
+        │        1/2     tilbake                   │   ← lite: navn, teller, hilsen
+        └──────────────────────────────────────────┘
 
     Typen står som én bokstav fordi kokken skal lese den på tvers av bordet,
     og nummeret er det servitøren roper.
+
+    Bredden bygges av kolonner med luft imellom, og tegningen vandrer gjennom
+    de samme listene. Da kan ikke bredderegnestykket og tegningen komme i
+    utakt — et avvik der gir overlapp eller dod tape, ikke en feilmelding.
     """
     kort = (forkortelse or FORKORTELSER.get(tekst.lower(), tekst[:1])).upper()
     hovedtekst = f"{kort}{nummer}"
 
     stor = finn_font(46)
     liten = finn_font(19)
+    hilsenskrift = finn_font(HILSEN_PT)
 
     # Mål opp innholdet på et engangsbilde før vi vet bredden.
     prov = ImageDraw.Draw(Image.new("L", (1, 1), 255))
@@ -206,14 +222,23 @@ def _tegn(
         (_mal(prov, navnelinje, liten)[0] if navnelinje else 0),
         (_mal(prov, teller, liten)[0] if teller else 0),
     )
-
-    qr_side = TRYKK_HOYDE if qr_url else 0
-    mellomrom = 10 if sidebredde else 0
-    qr_mellomrom = 12 if qr_side else 0
-
-    bredde = (
-        MARG + hovedbredde + mellomrom + sidebredde + qr_mellomrom + qr_side + MARG
+    # default=0: en tom HILSEN skal bare fjerne kolonnen, ikke kaste.
+    hilsenbredde = max(
+        (_mal(prov, ord, hilsenskrift)[0] for ord in HILSEN), default=0
     )
+    qr_side = TRYKK_HOYDE if qr_url else 0
+
+    # (bredde, luft foran). Tomme kolonner tar ingen plass, og heller ikke
+    # luften sin — sa regnestykket stemmer i alle kombinasjoner.
+    kolonner = [(hovedbredde, 0)]
+    if sidebredde:
+        kolonner.append((sidebredde, LUFT))
+    if hilsenbredde:
+        kolonner.append((hilsenbredde, LUFT))
+    if qr_side:
+        kolonner.append((qr_side, LUFT_QR))
+
+    bredde = MARG + sum(b + luft for b, luft in kolonner) + MARG
 
     bilde = Image.new("L", (bredde, HOYDE), 255)
     tegner = ImageDraw.Draw(bilde)
@@ -223,22 +248,33 @@ def _tegn(
 
     # Stort: typebokstav + nummer, vertikalt sentrert i trykkflaten.
     tegner.text((x, midt), hovedtekst, font=stor, fill=0, anchor="lm")
-    x += hovedbredde + mellomrom
+    x += hovedbredde
 
     # Lite: fornavn øverst, teller under.
-    if navnelinje or teller:
+    if sidebredde:
+        x += LUFT
         if navnelinje and teller:
             tegner.text((x, TRYKK_TOPP + 14), navnelinje, font=liten, fill=0, anchor="lm")
             tegner.text((x, TRYKK_TOPP + 46), teller, font=liten, fill=0, anchor="lm")
         else:
             tegner.text((x, midt), navnelinje or teller, font=liten, fill=0, anchor="lm")
-        x += sidebredde + qr_mellomrom
+        x += sidebredde
 
-    if qr_url:
+    # Hilsenen, ett ord over og ett under midtlinja.
+    if hilsenbredde:
+        x += LUFT
+        tegner.text((x, midt - HILSEN_AVSTAND), HILSEN[0], font=hilsenskrift, fill=0, anchor="lm")
+        tegner.text((x, midt + HILSEN_AVSTAND), HILSEN[1], font=hilsenskrift, fill=0, anchor="lm")
+        x += hilsenbredde
+
+    if qr_side:
+        x += LUFT_QR
         qr = _qr_bilde(qr_url, qr_side)
         if qr is not None:
-            bilde.paste(qr, (bredde - MARG - qr_side, TRYKK_TOPP))
+            bilde.paste(qr, (x, TRYKK_TOPP))
+        x += qr_side
 
+    assert x + MARG == bredde, "kolonnene og bredden er i utakt"
     return bilde
 
 
