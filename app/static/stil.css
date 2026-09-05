@@ -781,6 +781,22 @@ main.admin { max-width: 100rem; padding-top: 2rem; }
 }
 .knapp.steg.av:hover { border-color: var(--linje-sterk); color: var(--blekk-svak); }
 
+/* Sperret, ikke ulovlig. Den blir en ekte knapp i samme oyeblikk «Marker
+   betalt» er trykket, sa den skal si hva som mangler framfor a se tom ut. */
+.knapp.steg.av.sperret {
+  border-style: solid;
+  border-color: var(--tomat);
+  color: var(--tomat);
+  line-height: 1.1;
+}
+.knapp.steg.av.sperret small {
+  display: block;
+  margin-top: .15rem;
+  font-size: .68rem;
+  font-weight: 400;
+  color: var(--blekk-mild);
+}
+
 /* «Du står her.» Skal kunne leses, men aldri konkurrere med den røde
    handlingen ved siden av — dette er en opplysning, ikke en knapp. */
 .knapp.steg.naa {

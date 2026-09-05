@@ -356,6 +356,15 @@ def sett_status(ordre_id: int, ny_status: str, aktor: str = "admin") -> sqlite3.
                 f"Kan ikke gå fra {STATUSNAVN[fra]} til {STATUSNAVN[ny_status]}."
             )
 
+        # «Levert» er kvitteringen for at pengene er inne, og derfor det siste
+        # stedet et ubetalt salg kan fanges opp. Etterpa forsvinner raden ut av
+        # lista, og da er det ingen som ser den igjen for kvelden gjores opp.
+        #
+        # «Forlatt» er ikke sperret: en kunde som aldri dukket opp har heller
+        # ingen penger a betale med.
+        if ny_status == "levert" and not ordre["betalt"]:
+            raise Avvist("Marker bestillingen som betalt før den leveres ut.")
+
         tid = naa()
         kob.execute(
             "UPDATE ordre SET status = ?, oppdatert = ? WHERE id = ?",

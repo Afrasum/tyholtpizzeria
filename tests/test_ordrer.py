@@ -147,13 +147,14 @@ def test_statusflyt_tillater_lovlig_og_avviser_ulovlig(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
     import pytest
 
-    from app.ordrer import Avvist, Onske, opprett, sett_status
+    from app.ordrer import Avvist, Onske, opprett, sett_betalt, sett_status
 
     res = opprett("Afras", None, [Onske(_meny_id(db, "margherita"), 1)])
     oid = res["ordre_id"]
 
     assert sett_status(oid, "i_produksjon")["status"] == "i_produksjon"
     assert sett_status(oid, "klar")["status"] == "klar"
+    sett_betalt(oid, True)      # levert er sperret til pengene er inne
     assert sett_status(oid, "levert")["status"] == "levert"
 
     # Levert er ikke lenger endestasjon: ett trinn tilbake er angreknappen for
@@ -218,6 +219,7 @@ def test_henteskjerm_viser_bare_klare_numre(tmp_path, monkeypatch):
 
     sett_status(a["ordre_id"], "klar")
     sett_status(b["ordre_id"], "klar")
+    ordrer.sett_betalt(b["ordre_id"], True)
     sett_status(b["ordre_id"], "levert")
 
     with db.kobling() as kob:
@@ -255,15 +257,44 @@ def test_maks_10_pizzaer_per_bestilling(tmp_path, monkeypatch):
         opprett("Afras", None, [Onske(eid, 11)])
 
 
+def test_levert_krever_at_ordren_er_betalt(tmp_path, monkeypatch):
+    """«Levert» er det siste stedet et ubetalt salg kan fanges opp.
+
+    Etterpaa forsvinner raden ut av lista, og da er det ingen som ser den
+    igjen for kvelden gjores opp.
+    """
+    db = _oppsett(tmp_path, monkeypatch)
+    import pytest
+
+    from app.ordrer import Avvist, Onske, opprett, sett_betalt, sett_status
+
+    res = opprett("Afras", None, [Onske(_meny_id(db, "margherita"), 1)])
+    oid = res["ordre_id"]
+    sett_status(oid, "klar")
+
+    with pytest.raises(Avvist, match="betalt"):
+        sett_status(oid, "levert")
+
+    # Forlatt er IKKE sperret: en kunde som aldri kom har ingenting a betale
+    # med, og nummeret skal kunne ryddes vekk fra tavla.
+    assert sett_status(oid, "forlatt")["status"] == "forlatt"
+    with pytest.raises(Avvist, match="betalt"):
+        sett_status(oid, "levert")
+
+    sett_betalt(oid, True)
+    assert sett_status(oid, "levert")["status"] == "levert"
+
+
 def test_forlatt_kan_settes_manuelt_og_angres(tmp_path, monkeypatch):
     db = _oppsett(tmp_path, monkeypatch)
-    from app.ordrer import Onske, opprett, sett_status
+    from app.ordrer import Onske, opprett, sett_betalt, sett_status
 
     res = opprett("Afras", None, [Onske(_meny_id(db, "margherita"), 1)])
     oid = res["ordre_id"]
     sett_status(oid, "klar")
     assert sett_status(oid, "forlatt")["status"] == "forlatt"
-    # Kunden dukket opp likevel.
+    # Kunden dukket opp likevel — og betalte.
+    sett_betalt(oid, True)
     assert sett_status(oid, "levert")["status"] == "levert"
 
 
@@ -417,6 +448,7 @@ def test_skjermen_viser_nye_ordrer_som_under_arbeid(tmp_path, monkeypatch):
     fordi kjokkenet ikke har trykket «i produksjon» ennaa.
     """
     db = _oppsett(tmp_path, monkeypatch)
+    from app import ordrer
     from app.routes.skjerm import _tall
     from app.ordrer import Onske, opprett, sett_status
 
@@ -429,6 +461,7 @@ def test_skjermen_viser_nye_ordrer_som_under_arbeid(tmp_path, monkeypatch):
     sett_status(b["ordre_id"], "i_produksjon")
     sett_status(c["ordre_id"], "klar")
     sett_status(d["ordre_id"], "klar")
+    ordrer.sett_betalt(d["ordre_id"], True)
     sett_status(d["ordre_id"], "levert")
 
     with db.kobling() as kob:

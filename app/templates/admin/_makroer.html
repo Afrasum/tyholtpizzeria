@@ -11,14 +11,23 @@
 {% macro handlinger(o) -%}
   {% set steg = ("ny", "i_produksjon", "klar", "levert", "forlatt", "avbrutt") %}
   {% set lovlige = flyt[o.status] %}
+  {# «Levert» er sperret til pengene er inne. Serveren avviser den ogsaa
+     (ordrer.sett_status), men en knapp som bare gjor ingenting leses som en
+     feil — sa den skal si hvorfor, og den skal ikke se ut som en tom rute.
+     Plassen i 2x3-tastaturet holdes uansett. #}
+  {% set trenger_betaling = not o.betalt %}
 
   <div class="stegrad">
     {% for s in steg %}
-      {% if s in lovlige %}
+      {% if s in lovlige and not (s == "levert" and trenger_betaling) %}
       <form method="post" action="/admin/ordre/{{ o.id }}/status" class="inline">
         <input type="hidden" name="ny" value="{{ s }}">
         <button type="submit" class="knapp steg {% if s == lovlige[0] %}primar{% endif %}">{{ statusnavn[s] }}</button>
       </form>
+      {% elif s == "levert" and s in lovlige and trenger_betaling %}
+      <span class="knapp steg av sperret" title="Marker betalt først">
+        Levert<small>marker betalt først</small>
+      </span>
       {% else %}
       <span class="knapp steg av {% if s == o.status %}naa{% endif %}"
             aria-hidden="true">{{ statusnavn[s] }}</span>
@@ -29,7 +38,10 @@
   <div class="verktoyrad">
     <form method="post" action="/admin/ordre/{{ o.id }}/betalt" class="inline">
       <input type="hidden" name="betalt" value="{{ 0 if o.betalt else 1 }}">
-      <button type="submit" class="knapp">{{ "Ikke betalt likevel" if o.betalt else "Marker betalt" }}</button>
+      {# Naar ordren er klar og ubetalt er dette den eneste veien videre —
+         «Levert» er sperret til den er trykket. Da skal den ogsaa se ut som
+         neste steg. #}
+      <button type="submit" class="knapp {% if not o.betalt and o.status == 'klar' %}primar{% endif %}">{{ "Ikke betalt likevel" if o.betalt else "Marker betalt" }}</button>
     </form>
     <form method="post" action="/admin/ordre/{{ o.id }}/skriv-ut" class="inline">
       <button type="submit" class="knapp">Skriv ut igjen</button>
