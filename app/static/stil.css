@@ -792,6 +792,14 @@ main.admin { max-width: 100rem; padding-top: 2rem; }
 
 .ordretabell { display: none; }
 
+.i-lista {
+  margin: 1.4rem 0 .625rem;
+  font-family: var(--skilt);
+  font-size: 1.15rem;
+  color: var(--blekk-mild);
+}
+.i-lista b { color: var(--blekk); font-variant-numeric: tabular-nums; }
+
 .ingen { margin-top: 2rem; text-align: center; font-family: var(--skilt); font-style: italic; font-size: 1.25rem; color: var(--blekk-mild); }
 
 .styring-tittel { margin: 2.75rem 0 1.15rem; font-size: 2.125rem; }

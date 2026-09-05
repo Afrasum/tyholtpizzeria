@@ -8,7 +8,7 @@
   <header class="admin-topp">
     <h1>Bestillinger</h1>
     <ul class="nokkeltall">
-      <li class="solgt">{{ solgt }} pizzaer</li>
+      <li class="solgt" id="solgt">{{ solgt }} pizzaer</li>
       <li>{{ "Åpent" if aapent else "Stengt" }}</li>
     </ul>
     <div class="hoyre">
@@ -237,6 +237,11 @@ async function oppdater() {
       kobleBekreftelser();
     }
     forrigeSignatur = d.signatur;
+
+    // Salgstallet staar i toppen, utenfor #arbeidsflate, og byttes derfor
+    // aldri ut. Naa som leverte ordrer forsvinner fra lista er det den eneste
+    // loepende summen igjen — sa den settes inn for hand her.
+    document.getElementById("solgt").textContent = `${d.solgt} pizzaer`;
 
     // Alderen regnes ut i nettleseren, uten a hente noe.
     for (const o of d.ordrer) {

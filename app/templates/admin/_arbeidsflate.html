@@ -28,6 +28,18 @@
   </details>
   {% endif %}
 
+  {# Hvor mye staar igjen. Ligger her inne og ikke i toppen, fordi det er dette
+     fragmentet pollingen bytter ut — et tall i toppen ville staatt urort til
+     neste hele sidelasting og loeyet hver gang noen leverte en pizza.
+
+     «I lista» og ikke «venter»: lista rommer ogsaa forlatte og avbrutte. #}
+  {% if rader %}
+  <p class="i-lista">
+    <b>{{ i_lista }}</b> bestilling{{ "er" if i_lista != 1 }}
+    · <b>{{ pizzaer_i_lista }}</b> pizza{{ "er" if pizzaer_i_lista != 1 }} i lista
+  </p>
+  {% endif %}
+
   {# Mobil: kort. Kjøkkenmobilen skal aldri scrolle sidelengs. #}
   <ul class="ordreliste">
     {% for rad in rader %}

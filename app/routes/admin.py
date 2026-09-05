@@ -76,6 +76,14 @@ def _arbeidsflate(kob) -> dict:
         )
     return {
         "rader": rader,
+        # Tallet folk faktisk spor om over disken: hvor mye staar igjen. Det
+        # regnes ut her og ikke i malen, fordi bade /admin og /admin/rader skal
+        # se samme tall — og fordi det maa ligge INNE i arbeidsflata for a bli
+        # oppdatert av pollingen.
+        "i_lista": len(rader),
+        "pizzaer_i_lista": sum(
+            l["antall"] for rad in rader for l in rad["linjer"]
+        ),
         "skjulte": ordrer.skjulte_for_admin(kob),
         "statusnavn": ordrer.STATUSNAVN,
         "flyt": ordrer.FLYT,
@@ -187,6 +195,12 @@ def data(_=Depends(auth.krev)):
         return {
             "ordrer": ut,
             "feilede_jobber": len(feilede),
+            # Utenfor signaturen med vilje. Salgstallet staar i toppen, som
+            # ligger UTENFOR #arbeidsflate og derfor aldri byttes ut — det
+            # settes inn av pollingen i stedet. Var det med i signaturen, ville
+            # det bare vaert stoy: hver endring i det er ogsaa en endring i
+            # ordrelista.
+            "solgt": ordrer.solgte_pizzaer(kob),
             "signatur": hashlib.sha256(
                 json.dumps(
                     {"ordrer": stabilt, "feilede": feilede, "skjulte": skjulte},
