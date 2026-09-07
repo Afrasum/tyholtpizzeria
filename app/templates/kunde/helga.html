@@ -16,16 +16,16 @@
     <h1>Helga i tall</h1>
     <p class="n-lopetekst">
       To kvelder, ett bord, tre pizzaer på menyen og
-      <b>{{ pizzaer }}</b> esker ut døra.
+      <b>{{ pizzaer_vist }}</b> esker ut døra.
     </p>
   </header>
 
   <section class="n-tavle bred">
     <ul class="n-tall">
-      <li><b>{{ pizzaer }}</b><span>pizzaer ut av ovnen</span></li>
+      <li><b>{{ pizzaer_vist }}</b><span>pizzaer ut av ovnen</span></li>
       <li><b>{{ bestillinger }}</b><span>bestillinger</span></li>
       <li><b>{{ median_minutter }}<i>min</i></b><span>fra bestilling til klar</span></li>
-      <li><b>{{ "{:,}".format(kroner).replace(",", " ") }}<i>kr</i></b><span>over disken</span></li>
+      <li><b>{{ "{:,}".format(kroner).replace(",", " ") }}<i>kr</i></b><span>registrert over disken</span></li>
     </ul>
   </section>
 
@@ -105,6 +105,14 @@
     </div>
     <div class="n-spalte">
       <dl class="n-noter">
+        <dt>300+, og {{ pizzaer }}</dt>
+        <dd>Minst {{ pizzaer_minst }} esker gikk ut døra. Systemet logget
+          {{ pizzaer }} av dem — noen ble solgt uten å gå gjennom det, og de
+          finnes ikke i basen. Overskriftene sier «{{ pizzaer_vist }}» fordi
+          det er sant. Alt som er <em>regnet</em> på under — søylene per time,
+          prosentene per rett, kronene — bygger på de {{ pizzaer }} som er
+          logget, så de summene stemmer med hverandre.</dd>
+
         <dt>Hva som er talt</dt>
         <dd>Alle bestillinger som ikke ble avbrutt eller forlatt — {{ bestillinger }}
           av 208. De to som falt ut var én kunde som aldri kom, og én
@@ -120,8 +128,8 @@
           ærligste av dem. Den tregeste var {{ tregeste_minutter }} minutter.</dd>
 
         <dt>Kronene</dt>
-        <dd>{{ pizzaer }} pizzaer til 59 kr. Det er hele regnestykket — det
-          var én pris på alt.</dd>
+        <dd>{{ pizzaer }} loggede pizzaer til 59 kr. Det er hele regnestykket
+          — det var én pris på alt. De som gikk utenom systemet er ikke med.</dd>
 
         <dt>Frosset</dt>
         <dd>Tallene ble regnet ut én gang etter at vi stengte, og ligger i

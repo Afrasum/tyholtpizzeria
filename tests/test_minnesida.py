@@ -59,6 +59,39 @@ def test_tallene_summerer_seg_til_det_samme_tre_veier():
     assert sum(n for _, _, n in minne.RETTER) == minne.PIZZAER
 
 
+def test_overskriftene_viser_300_men_regnestykkene_bruker_299():
+    """De to tallene maa ikke bytte plass.
+
+    «300+» er sant og staar i overskriftene. Prosentene per rett summerer seg
+    til 100 bare mot det LOGGEDE tallet, saa alt som regnes maa bruke det.
+    """
+    from app import minne
+
+    assert minne.PIZZAER_VIST == "300+"
+    assert minne.PIZZAER_MINST > minne.PIZZAER
+    assert minne.KRONER == minne.PIZZAER * 59
+    assert sum(n for _, _, n in minne.RETTER) == minne.PIZZAER
+
+
+def test_sida_viser_300_i_toppen_og_forklarer_avviket(tmp_path, monkeypatch):
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import innstillinger, minne
+
+    innstillinger.sett("manuelt_stengt", "1")
+    klient = _klient(db)
+
+    forside = klient.get("/").text
+    assert minne.PIZZAER_VIST in forside
+    # Det loggede tallet skal ikke staa som en overskrift paa forsida.
+    assert f"<b>{minne.PIZZAER}</b>" not in forside
+
+    helga = klient.get("/helga").text
+    assert minne.PIZZAER_VIST in helga
+    # Avviket maa forklares der tallene faktisk brytes ned.
+    assert str(minne.PIZZAER_MINST) in helga
+    assert str(minne.PIZZAER) in helga
+
+
 def test_kronene_er_pizzaer_ganger_prisen():
     from app import minne
 

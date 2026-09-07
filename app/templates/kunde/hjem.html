@@ -23,7 +23,7 @@
       </h1>
       <p class="n-lopetekst">
         To kvelder i festningshelga {{ datoer[-4:] }}. Tre pizzaer, én pris,
-        <b>{{ pizzaer }}</b> esker ut døra i Tyholtveien.
+        <b>{{ pizzaer_vist }}</b> esker ut døra i Tyholtveien.
       </p>
       <p class="n-status">
         Vi er stengt nå, men dukker opp igjen ved anledninger.
@@ -54,7 +54,7 @@
     <div class="n-tavle-spalte">
     <h2 class="n-tavle-tittel" id="tavle-tittel">Helga i tall</h2>
     <ul class="n-tall">
-      <li><b>{{ pizzaer }}</b><span>pizzaer ut av ovnen</span></li>
+      <li><b>{{ pizzaer_vist }}</b><span>pizzaer ut av ovnen</span></li>
       <li><b>{{ bestillinger }}</b><span>bestillinger</span></li>
       <li><b>{{ median_minutter }}<i>min</i></b><span>fra bestilling til klar</span></li>
       <li><b>{{ topptime }}</b><span>i den travleste timen</span></li>

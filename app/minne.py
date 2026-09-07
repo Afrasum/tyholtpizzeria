@@ -18,9 +18,22 @@ Ingenting av det skal ut på en offentlig side — bare summene.
 
 from __future__ import annotations
 
-PIZZAER = 299
+# To tall, og de er ikke det samme.
+#
+# PIZZAER er hva systemet logget: 299, summert over alle bestillinger som ikke
+# ble avbrutt eller forlatt. Alt som REGNES på — prosentene per rett,
+# søylene per time, kronene — bygger på dette, og de tre summene stemmer med
+# hverandre. Det er en test på det.
+#
+# Men minst 301 esker gikk faktisk ut døra. Noen ble solgt uten å gå gjennom
+# systemet, og de finnes ikke i basen. Derfor sier overskriftene «300+» —
+# det er sant, og det påstår ikke en presisjon vi ikke har.
+PIZZAER = 299              # logget i basen
+PIZZAER_MINST = 301        # talt for hånd; minst så mange gikk ut
+PIZZAER_VIST = "300+"      # det overskriftene sier
+
 BESTILLINGER = 206
-KRONER = PIZZAER * 59      # alt kostet 59 kr, så dette ER omsetningen
+KRONER = PIZZAER * 59      # av de loggede. Alt kostet 59 kr.
 
 # Median, ikke snitt. Snittet er 8,3 og medianen 8,2 — de er like her, og da
 # er medianen den ærligste av dem.
@@ -86,7 +99,12 @@ def alt() -> dict:
     """Hele minnet som én malkontekst."""
     return {
         "om_oss": OM_OSS,
+        # `pizzaer` er tallet det regnes med, `pizzaer_vist` er det som staar
+        # i overskriftene. Ikke bytt dem om — prosentene under «Hva folk ville
+        # ha» summerer seg til 100 bare mot det loggede tallet.
         "pizzaer": PIZZAER,
+        "pizzaer_vist": PIZZAER_VIST,
+        "pizzaer_minst": PIZZAER_MINST,
         "bestillinger": BESTILLINGER,
         "kroner": KRONER,
         "median_minutter": MEDIAN_MINUTTER,

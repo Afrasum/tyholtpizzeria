@@ -19,6 +19,11 @@ Bryteren «Steng» i admin styrer hele kundesida, ikke bare skjemaet:
 
 `/helga` (`kunde/helga.html`) er permanent og staar i begge tilstander.
 
+Overskriftene sier **300+**, regnestykkene bruker **299**. Systemet logget
+299; minst 301 gikk ut døra, men de som ble solgt utenom finnes ikke i basen.
+`minne.PIZZAER` er det loggede tallet og alt som summeres bygger paa det;
+`minne.PIZZAER_VIST` er det overskriftene sier. Ikke bytt dem om.
+
 Teksten under «Hvem vi er» er `minne.OM_OSS` — ett strengelement per avsnitt,
 tom til noen skriver dem. Er den tom, hopper malen over avsnittene framfor aa
 vise en plassholder. Det er en test paa det.
