@@ -10,6 +10,18 @@ dependencies = [
     "python-multipart>=0.0.12",
     "itsdangerous>=2.2",
     "pillow>=10.0",
+    # QR-en paa etiketten. Var installert uten aa staa her, og forsvant i det
+    # foerste `uv sync` — etikett.py taaler at den mangler (QR-en blir bare
+    # borte), men den skal ikke mangle.
+    "segno>=1.6",
+]
+
+[dependency-groups]
+# Bare til testene. starlette.testclient krever httpx, og rutetestene er den
+# eneste maaten aa faa sjekket at kvitteringene faktisk er stengt.
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",
 ]
 
 [tool.uv]
