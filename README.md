@@ -19,6 +19,10 @@ Bryteren «Steng» i admin styrer hele kundesida, ikke bare skjemaet:
 
 `/helga` (`kunde/helga.html`) er permanent og staar i begge tilstander.
 
+Teksten under «Hvem vi er» er `minne.OM_OSS` — ett strengelement per avsnitt,
+tom til noen skriver dem. Er den tom, hopper malen over avsnittene framfor aa
+vise en plassholder. Det er en test paa det.
+
 To ULIKE maler, ikke en if-grein: forside.html er tunet for en 34 rem
 telefonspalte med klistrekurv og pluss/minus-felt, hjem.html er en bred
 nettside. Stilarket til nettsida har `n-`-prefiks paa hver klasse, fordi

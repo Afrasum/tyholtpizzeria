@@ -70,13 +70,12 @@
       <h2>Hvem vi er</h2>
     </div>
     <div class="n-spalte">
-      {# ─────────────────────────────────────────────────────────────────────
-         FYLL INN. Det ene avsnittet paa hele sida som ikke kan hentes fra
-         basen eller leses ut av koden — det er deres egne ord.
-         Tre–fem setninger: hvem «vi» er, hvorfor pizza, hvorfor Tyholtveien
-         en helg i september.
-         ───────────────────────────────────────────────────────────────── #}
-      <p class="n-mangler">Her skal det stå noen setninger om oss. De er ikke skrevet ennå.</p>
+      {# Avsnittene kommer fra minne.OM_OSS og er tomme til noen skriver dem.
+         Er de tomme, staar seksjonen paa den ene linja under — den er sann og
+         den er vaar. Ingen plassholderrute som kan bli staaende ute. #}
+      {% for avsnitt in om_oss %}
+      <p class="n-brod">{{ avsnitt }}</p>
+      {% endfor %}
       <p class="n-brod">
         Vi hadde tre pizzaer, ett bord og en ovn i Tyholtveien. Alt kostet
         59 kr, fordi det var enklere å ha én pris enn tre.

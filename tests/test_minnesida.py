@@ -169,6 +169,37 @@ def test_helga_viser_hver_time_fra_begge_kveldene(tmp_path, monkeypatch):
     assert kropp.count('class="hoyest"') == 1
 
 
+def test_ingen_plassholdertekst_paa_den_offentlige_sida(tmp_path, monkeypatch):
+    """En «ikke skrevet ennå»-rute skal ikke kunne bli staaende ute.
+
+    Teksten om oss er data (minne.OM_OSS), ikke en plassholder i malen. Er den
+    tom, hopper malen over avsnittene framfor aa vise en tom ramme.
+    """
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import innstillinger
+
+    innstillinger.sett("manuelt_stengt", "1")
+    kropp = _klient(db).get("/").text
+    for lekkasje in ("ikke skrevet", "Her skal det staa", "Her skal det stå",
+                     "FYLL INN", "TODO", "Lorem"):
+        assert lekkasje not in kropp, lekkasje
+    # Seksjonen skal likevel finnes, med den ene linja vi kan staa for.
+    assert "Hvem vi er" in kropp
+    assert "enklere å ha én pris enn tre" in kropp
+
+
+def test_om_oss_avsnitt_havner_paa_sida(tmp_path, monkeypatch):
+    """Naar teksten er skrevet skal den faktisk vises."""
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import innstillinger, minne
+
+    innstillinger.sett("manuelt_stengt", "1")
+    monkeypatch.setattr(minne, "OM_OSS", ("Vi er to brodre.", "Vi liker deig."))
+    kropp = _klient(db).get("/").text
+    assert "Vi er to brodre." in kropp
+    assert "Vi liker deig." in kropp
+
+
 # ── Kvitteringene ────────────────────────────────────────────────────────────
 
 

@@ -37,6 +37,14 @@ STED = "Tyholtveien 25, Trondheim"
 FORSTE_NUMMER = 47
 SISTE_NUMMER = 257
 
+# Avsnittene under «Hvem vi er». Ett strengelement per avsnitt.
+#
+# Tom til noen skriver dem. Det er MED VILJE ikke en plassholdertekst i malen:
+# en stiplet «ikke skrevet ennå»-rute på en side som ligger ute er verre enn
+# ingen tekst. Er denne tom, hopper malen over avsnittene og lar den ene linja
+# vi faktisk kan stå for bære seksjonen.
+OM_OSS: tuple[str, ...] = ()
+
 # (kallenavn, det ekte navnet, antall). Rekkefølge = slik de faktisk solgte.
 RETTER = [
     ("Don Skinkone", "Skinke", 195),
@@ -77,6 +85,7 @@ TOPPTIME_NAAR = "lørdag mellom 18 og 19"
 def alt() -> dict:
     """Hele minnet som én malkontekst."""
     return {
+        "om_oss": OM_OSS,
         "pizzaer": PIZZAER,
         "bestillinger": BESTILLINGER,
         "kroner": KRONER,

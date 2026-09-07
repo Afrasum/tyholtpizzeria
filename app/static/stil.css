@@ -738,18 +738,8 @@ body.nettside { background: var(--fersken); }
 .n-skinne .n-under b { color: var(--blekk); font-variant-numeric: tabular-nums; }
 
 .n-spalte { max-width: 38rem; }
-.n-brod { margin: 0; font-size: 1.1rem; line-height: 1.65; text-wrap: pretty; }
-
-/* Staar til teksten om oss er skrevet. Ser bevisst uferdig ut, saa den ikke
-   kan bli staaende ved et uhell. */
-.n-mangler {
-  margin: 0 0 1.25rem;
-  padding: 1rem 1.25rem;
-  border: 1px dashed var(--linje-sterk);
-  border-radius: var(--rund-liten);
-  color: var(--blekk-svak);
-  font-style: italic;
-}
+.n-brod { margin: 0 0 1.1rem; font-size: 1.1rem; line-height: 1.65; text-wrap: pretty; }
+.n-brod:last-child { margin-bottom: 0; }
 
 /* ── Menyen ───────────────────────────────────────────────────────────── */
 
