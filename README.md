@@ -8,6 +8,23 @@ SQLite, kjørt på rpi5 og eksponert gjennom cloudflared-tunnelen `rpi`.
 
 Etikettene printes på en Brother PT-P300BT over Bluetooth (`/dev/rfcomm0`).
 
+## To tilstander
+
+Bryteren «Steng» i admin styrer hele kundesida, ikke bare skjemaet:
+
+| `manuelt_stengt` | Forsida | Kvitteringene |
+|---|---|---|
+| `0` | meny og bestilling | `/kvittering/{id}` virker |
+| `1` | helga i tall, om oss, menyen vi hadde | alle svarer 404 |
+
+Etter 4.–5. september 2026 staar den paa `1`, og sida er et minne. Tallene
+ligger frosset i `app/minne.py` — de hentes ikke levende, se docstringen der.
+
+Kvitteringene er stengt fordi `/kvittering/{id}` tar en gjettbar id og viser
+fornavn og e-postadresse. Aapner vi for en ny pop-up virker de igjen, og da er
+ogsaa de gamle naabare — vil vi unngaa det maa de gamle radene toemmes eller
+anonymiseres foer vi aapner.
+
 ## Domener
 
 | URL | Hva |
