@@ -4,42 +4,57 @@
    faller pent tilbake til den nøytrale bunnen. #}
 {% set tegnede = ("margherita", "skinke", "paere") %}
 
+{% block kropp_klasse %}{{ "kunde" if aapent else "kunde minne" }}{% endblock %}
+
 {% block innhold %}
 <main class="side kunde">
 
   <header class="topp">
-    <p class="stedet">Pop-up i festningshelga</p>
+    <p class="stedet">{{ "Pop-up i festningshelga" if aapent else "Pop-up i Trondheim" }}</p>
     <h1 class="navn" aria-label="Tyholt Pizzeria">
       <span aria-hidden="true">Tyholt</span>
       <span class="ord-to" aria-hidden="true">Pizzer<span class="i-med-blad">ı<svg class="blad" aria-hidden="true"><use href="#basilikum"></use></svg></span>a</span>
     </h1>
+    {# Foer prisen med vilje i begge greinene: .fakta li:last-child er den
+       rode brikka, og den skal staa paa kroner — ikke paa stoerrelsen. #}
+    {% if aapent %}
     <ul class="fakta">
       <li>4.–5. september</li>
       <li>15:00–00:00</li>
-      {# Foer prisen med vilje: .fakta li:last-child er den rode brikka, og
-         den skal staa paa «59 kr», ikke paa stoerrelsen. #}
       <li>ca. 20 cm*</li>
       <li>Alt koster 59 kr</li>
     </ul>
+    {% else %}
+    <ul class="fakta">
+      <li>{{ datoer }}</li>
+      <li>{{ pizzaer }} pizzaer</li>
+      <li>Alt kostet 59 kr</li>
+    </ul>
+    <p class="ettermaele">
+      Vi holdt åpent to kvelder i festningshelga, og så pakket vi sammen.
+      Dukker vi opp igjen, står det her.
+    </p>
+    {% endif %}
   </header>
-
-  {% if not aapent %}
-    <p class="varsel stengt"><b>{{ grunn }}</b><br>Menyen står, men du kan ikke bestille akkurat nå.</p>
-  {% endif %}
 
   {% if feil %}
     <p class="varsel feil">{{ feil }}</p>
   {% endif %}
 
+{% if not aapent %}
+  {% include "kunde/_helga.html" %}
+  {% include "kunde/_omoss.html" %}
+{% endif %}
+
   <form class="bestilling" method="post" action="/bestill">
 
     <section class="meny">
-      <h2>Menyen</h2>
-      <p class="stemme ingress">Tre pizzaer. {% if aapent %}Trykk pluss.{% else %}Alle koster 59 kr.{% endif %}</p>
+      <h2>{{ "Menyen" if aapent else "Menyen vi hadde" }}</h2>
+      <p class="stemme ingress">Tre pizzaer. {% if aapent %}Trykk pluss.{% else %}Alle kostet 59 kr.{% endif %}</p>
 
       <ul class="menyliste">
         {% for rett in meny %}
-        <li class="menyrett {% if not rett.tilgjengelig %}utsolgt{% endif %}">
+        <li class="menyrett {% if not rett.tilgjengelig and aapent %}utsolgt{% endif %}">
 
           <div class="rett-hode">
             <div class="tegning" aria-hidden="true">
@@ -73,7 +88,7 @@
           </p>
           {% endif %}
 
-          {% if not rett.tilgjengelig %}
+          {% if not rett.tilgjengelig and aapent %}
             <p class="utsolgt-merke">Utsolgt</p>
           {% elif aapent %}
             <div class="antall" data-pris="{{ rett.pris_ore }}">
@@ -90,14 +105,14 @@
       </ul>
 
       <p class="spor">
-        <b>* Ca. 20 cm i diameter</b>
+        <b>{{ "* " if aapent }}Ca. 20 cm i diameter</b>
         Deigen strekkes for hånd, så noen blir litt større og andre litt
         mindre. Regn med ±2 cm.
       </p>
 
       {% if spor %}
       <p class="spor">
-        <b>* Kan inneholde spor av</b>
+        <b>{{ "* " if aapent }}Kan inneholde spor av</b>
         {% for a in spor %}{{ a.navn }}{% if not loop.last %} · {% endif %}{% endfor %}.
         Alt lages på samme kjøkken, så vi kan ikke garantere mot krysskontaminering.
       </p>
@@ -140,6 +155,14 @@
     {% endif %}
 
   </form>
+
+{% if not aapent %}
+  <section class="ta-kontakt">
+    <h2>Skal du ha pizza til noe?</h2>
+    <p>Vi lover ingenting om kapasitet eller pris, men spør gjerne.</p>
+    <a class="knapp" href="mailto:hei@tyholtpizzeria.com?subject=Pizza%20til%20noe">Send en mail</a>
+  </section>
+{% endif %}
 
   <footer class="bunn">
     <p class="slagord">Fordi vi elsker pizza &lt;3</p>

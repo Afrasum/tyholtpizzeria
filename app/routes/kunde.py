@@ -1,4 +1,26 @@
-"""Kundesida: meny, bestilling og kvittering."""
+"""Kundesida: meny, bestilling og kvittering.
+
+KVITTERINGENE ER STENGT NAAR SIDA ER STENGT.
+
+`/kvittering/{id}` tar en gjettbar heltallsid og viste fornavn og
+e-postadresse. Det var en akseptabel pris sa lenge sida var et verktoy for én
+helg, der alle som apnet en slik lenke nettopp hadde bestilt selv. Etter 4.–5.
+september ligger det 208 tellbare URL-er med 119 e-postadresser bak — pa en
+side som na er offentlig og skal deles. Da er prisen ikke akseptabel lenger.
+
+Sperra henger pa `ordrer.kan_bestille()`, samme bryter som skjuler
+bestillingsskjemaet, framfor pa en egen nokkel:
+
+* na, med sida stengt, svarer alle 208 med 404
+* apner vi for en ny pop-up virker kvitteringene igjen, og bestillingsveien
+  er hel — den sender kunden rett hit etter `/bestill`
+
+Prisen er at de gamle kvitteringene ogsaa blir naabare igjen ved neste
+apning. Vil vi unnga det er den ekte losningen aa tomme eller anonymisere de
+gamle radene foer vi apner, ikke en tredje bryter her.
+
+Dataene rores ikke uansett: de ligger i basen og er synlige i /admin bak
+passord. Det er BARE veien inn utenfra som er stengt."""
 
 from __future__ import annotations
 
@@ -6,7 +28,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.concurrency import run_in_threadpool
 
-from .. import allergener, innstillinger, meny, ordrer
+from .. import allergener, innstillinger, meny, minne, ordrer
 from ..db import kobling
 from ..maler import maler
 
@@ -22,6 +44,10 @@ def _forsidedata(kob, **ekstra) -> dict:
         "grunn": grunn,
         "innst": innstillinger.alle(kob),
         "maks": ordrer.MAKS_PER_BESTILLING,
+        # Frosne tall fra 4.–5. september. Legges inn ALLTID, ogsaa naar det
+        # er aapent: det koster et dict-oppslag, og da kan ikke malen ta 500
+        # fordi noen skrudde paa den manuelle bryteren.
+        **minne.alt(),
     }
     data.update(ekstra)
     return data
@@ -92,13 +118,22 @@ async def bestill(request: Request):
     return RedirectResponse(f"/kvittering/{res['ordre_id']}", status_code=303)
 
 
+def _stengt_for_kvittering(kob) -> bool:
+    """Sant naar kvitteringene ikke skal vaere naabare. Se modulen over."""
+    aapent, _ = ordrer.kan_bestille(kob)
+    return not aapent
+
+
 @ruter.get("/kvittering/{ordre_id}", response_class=HTMLResponse)
 def kvittering(request: Request, ordre_id: int):
     with kobling() as kob:
-        pakke = ordrer.med_linjer(kob, ordre_id)
+        pakke = None if _stengt_for_kvittering(kob) else ordrer.med_linjer(kob, ordre_id)
         if pakke is None:
             return maler.TemplateResponse(
-                request, "kunde/ikke_funnet.html", {}, status_code=404
+                request,
+                "kunde/ikke_funnet.html",
+                {"innst": innstillinger.alle(kob)},
+                status_code=404,
             )
         return maler.TemplateResponse(
             request,
@@ -114,8 +149,13 @@ def kvittering(request: Request, ordre_id: int):
 
 @ruter.get("/status/{ordre_id}")
 def status(ordre_id: int):
-    """JSON for kvitteringssida, som poller for å se når pizzaen er klar."""
+    """JSON for kvitteringssida, som poller for å se når pizzaen er klar.
+
+    Stenges sammen med kvitteringen: den lakk dagsnummer og status per id.
+    """
     with kobling() as kob:
+        if _stengt_for_kvittering(kob):
+            return {"finnes": False}
         rad = kob.execute(
             "SELECT dagsnummer, status FROM ordre WHERE id = ?", (ordre_id,)
         ).fetchone()
