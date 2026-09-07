@@ -12,10 +12,17 @@ Etikettene printes på en Brother PT-P300BT over Bluetooth (`/dev/rfcomm0`).
 
 Bryteren «Steng» i admin styrer hele kundesida, ikke bare skjemaet:
 
-| `manuelt_stengt` | Forsida | Kvitteringene |
+| `manuelt_stengt` | `/` rendrer | Kvitteringene |
 |---|---|---|
-| `0` | meny og bestilling | `/kvittering/{id}` virker |
-| `1` | helga i tall, om oss, menyen vi hadde | alle svarer 404 |
+| `0` | `kunde/forside.html` — meny og bestilling | `/kvittering/{id}` virker |
+| `1` | `kunde/hjem.html` — nettsida | alle svarer 404 |
+
+`/helga` (`kunde/helga.html`) er permanent og staar i begge tilstander.
+
+To ULIKE maler, ikke en if-grein: forside.html er tunet for en 34 rem
+telefonspalte med klistrekurv og pluss/minus-felt, hjem.html er en bred
+nettside. Stilarket til nettsida har `n-`-prefiks paa hver klasse, fordi
+`.topp` og `.antall` fra bestillingssida ellers slaar inn i den.
 
 Etter 4.–5. september 2026 staar den paa `1`, og sida er et minne. Tallene
 ligger frosset i `app/minne.py` — de hentes ikke levende, se docstringen der.

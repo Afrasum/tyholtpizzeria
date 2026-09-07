@@ -509,208 +509,518 @@ small { display: block; margin-top: .4rem; font-size: .875rem; color: var(--blek
 .bunn .kontakt a { text-decoration: none; }
 .bunn .adresse { align-self: center; padding-bottom: 2px; border-bottom: 1px solid rgba(30, 20, 14, .25); color: var(--blekk); }
 
-/* ── Minnesida: helga i tall ───────────────────────────────────────────── */
-/* Denne flata finnes bare naar bestillingen er stengt. Da er ikke sida et
-   verktoy lenger, men et ettermaele: tallene fra 4.–5. september er hele
-   grunnen til at noen apner den. Derfor faar de plass til aa vaere store.
-   Paletten er den samme — ingen ny identitet for en side som er samme sted. */
+/* ── Nettsida (hjem.html, helga.html) ──────────────────────────────────────
+   Dette er IKKE bestillingssida. Den er en 34 rem telefonspalte med
+   klistrekurv; dette er en bred side som skal leses paa en skjerm.
 
-.minne { padding-bottom: 4rem; }   /* ingen klistrekurv aa gjore plass til */
+   ALLE klassenavn her har `n-`. Det er ikke pynt: `.topp` (hodet paa
+   kundesida) og `.antall` (pluss/minus-raden i menyen) slo begge inn i denne
+   flata da den ble bygd uten prefiks, og gjorde topptimen til den laveste
+   soyla i grafen. Prefikset gjor kollisjon umulig.
 
-.ettermaele {
-  max-width: 26rem;
-  margin: 1.5rem auto 0;
-  font-size: 1.05rem;
-  line-height: 1.55;
+   Paletten og skriftene er de samme — det er samme sted, ikke en ny
+   identitet. Det som er nytt er skala og komposisjon.
+   ------------------------------------------------------------------------ */
+
+body.nettside { background: var(--fersken); }
+
+.nett {
+  --bred: 74rem;
+  --luft: clamp(1.25rem, 4vw, 3rem);
+  max-width: var(--bred);
+  margin: 0 auto;
+  padding: 0 var(--luft) 0;
+}
+
+/* Liten etikett i versaler. Brukes som seksjonsnummer og som stedsangivelse
+   i toppen, og er den ene tingen som gjentas paa hver bolk. */
+.n-merke {
+  margin: 0 0 .9rem;
+  font-family: var(--brod);
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--tomat);
+}
+.n-merke a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--linje-sterk); }
+.n-merke a:hover { color: var(--tomat-mork); }
+
+.n-lopetekst {
+  margin: 1.25rem 0 0;
+  max-width: 34rem;
+  font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+  line-height: 1.5;
   color: var(--blekk-mild);
   text-wrap: pretty;
 }
+.n-lopetekst b { color: var(--blekk); font-variant-numeric: tabular-nums; }
 
-.helga, .omoss, .ta-kontakt { margin-top: 3.25rem; }
-.helga > h2, .omoss > h2, .ta-kontakt > h2 {
-  font-size: 2.5rem;
-  font-variation-settings: "opsz" 96, "SOFT" 100;
-  margin-bottom: .35rem;
+.n-knapp {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: 52px;
+  padding: .8rem 1.5rem;
+  border: 1px solid var(--linje-sterk);
+  border-radius: var(--pille);
+  background: var(--kvittering);
+  color: var(--blekk);
+  font-size: 1rem;
+  text-decoration: none;
+  transition: border-color .15s, color .15s, background .15s;
 }
-.helga .ingress, .omoss .ingress { margin: 0 0 1.5rem; }
+.n-knapp:hover { border-color: var(--tomat); color: var(--tomat); }
+.n-knapp.primar {
+  border-color: transparent;
+  background: var(--tomat);
+  color: var(--papir);
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 32;
+  font-size: 1.15rem;
+}
+.n-knapp.primar:hover { background: var(--tomat-mork); color: var(--papir); }
 
-/* Tallene. Fire ruter, to i bredden — ogsaa paa den smaleste telefonen, fordi
-   et tall alene paa en rad ser ut som en feil. */
-.tallkort {
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+
+.n-hero {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: .7rem;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  padding: clamp(2.5rem, 6vw, 5rem) 0 clamp(2.5rem, 5vw, 4rem);
+  align-items: center;
+}
+@media (min-width: 56rem) {
+  /* Asymmetrisk: teksten faar mest, tegningene nok til aa lese detaljene. */
+  .n-hero { grid-template-columns: 6fr 5fr; }
+}
+
+.n-navn {
+  margin: 0;
+  font-family: var(--skilt);
+  font-weight: 400;
+  font-size: clamp(3.4rem, 11vw, 7.5rem);
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+  line-height: .88;
+  letter-spacing: -.04em;
+}
+.n-navn .ord-to { display: block; font-style: italic; color: var(--tomat); }
+
+.n-status {
+  margin: .9rem 0 0;
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 24;
+  font-size: 1.15rem;
+  color: var(--tomat);
+}
+
+.n-veier { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
+
+/* Klasen: tre tegninger som ligger delvis over hverandre, som esker paa et
+   bord. Aspect-ratio holder ruta kvadratisk saa de ikke sklir naar spalta
+   endrer bredde. */
+.n-klase { position: relative; aspect-ratio: 1; max-width: 30rem; margin: 0 auto; width: 100%; }
+.n-pizza { position: absolute; width: 62%; filter: drop-shadow(0 10px 22px rgba(61, 42, 30, .18)); }
+.n-pizza.p1 { top: 0; left: 0; transform: rotate(-9deg); }
+.n-pizza.p2 { top: 17%; right: 0; transform: rotate(7deg); }
+.n-pizza.p3 { bottom: 0; left: 16%; transform: rotate(-3deg); }
+
+/* ── Tallbanner ───────────────────────────────────────────────────────── */
+/* Full bredde og morkt, formet som henteskjermen over disken: korngule tall
+   over en liten etikett. Det ene stedet paa sida som roper. */
+.n-tavle {
+  /* Bryter ut av .nett-spalta til hele vindusbredden. */
+  margin-inline: calc(50% - 50vw);
+  padding: clamp(2rem, 4vw, 3rem) 0;
+  background: var(--mork);
+  color: var(--papir);
+}
+/* Innerspalta speiler .nett noyaktig — samme max-width og samme sideluft — saa
+   tallene staar paa samme venstrekant som heroen over. Uten den ble de staaende
+   én luft-bredde for langt til venstre. */
+.n-tavle-spalte {
+  max-width: var(--bred);
+  margin-inline: auto;
+  padding-inline: var(--luft);
+}
+/* Paa /helga er tavla et kort inne i spalta, ikke et banner paa tvers. */
+.n-tavle.bred {
+  margin-inline: 0;
+  padding: clamp(2rem, 4vw, 3rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-radius: var(--rund);
+}
+
+.n-tavle-tittel {
+  margin: 0 0 1.75rem;
+  font-family: var(--skilt);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-variation-settings: "opsz" 60, "SOFT" 100;
+  color: var(--korn);
+}
+
+.n-tall {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(1.25rem, 3vw, 2.5rem);
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.tallkort li {
-  display: flex;
-  flex-direction: column;
-  gap: .3rem;
-  padding: 1.1rem 1rem 1.15rem;
-  border: 1px solid var(--linje);
-  border-radius: var(--rund);
-  background: var(--papir);
-}
-.tallkort b {
+@media (min-width: 46rem) { .n-tall { grid-template-columns: repeat(4, 1fr); } }
+
+.n-tall li { display: flex; flex-direction: column; gap: .35rem; }
+.n-tall b {
   font-family: var(--skilt);
   font-weight: 400;
-  font-size: 2.9rem;
-  font-variation-settings: "opsz" 96, "SOFT" 100;
-  line-height: .95;
-  letter-spacing: -.04em;
-  color: var(--tomat);
+  font-size: clamp(2.6rem, 6vw, 4.2rem);
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+  line-height: .9;
+  letter-spacing: -.045em;
+  color: var(--korn);
   font-variant-numeric: tabular-nums;
 }
-/* «min» henger paa tallet, men skal ikke lese som en del av det. */
-.tallkort b i {
+/* Enheten henger paa tallet, men skal ikke leses som en del av det. */
+.n-tall b i {
   font-style: normal;
-  font-size: .38em;
+  font-size: .32em;
   letter-spacing: 0;
-  margin-left: .12em;
-  color: var(--blekk-mild);
+  margin-left: .3em;
+  color: rgba(240, 228, 204, .6);
 }
-.tallkort span {
-  font-size: .875rem;
-  line-height: 1.3;
-  color: var(--blekk-mild);
-  text-wrap: pretty;
+.n-tall span { font-size: .9rem; line-height: 1.35; color: rgba(240, 228, 204, .72); text-wrap: pretty; }
+
+.n-videre {
+  display: inline-block;
+  margin: 2rem 0 0;
+  color: var(--korn);
+  font-size: .975rem;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(232, 190, 122, .4);
+}
+.n-videre:hover { color: var(--papir); border-bottom-color: var(--papir); }
+
+/* ── Bolker: venstre skinne + hoyre spalte ────────────────────────────── */
+/* Det gjennomgaaende monsteret paa sida. Etikett og overskrift staar i
+   skinna, innholdet til hoyre — samme rytme paa hver bolk, saa det leses som
+   et system og ikke som fem ulike seksjoner. */
+.n-bolk {
+  display: grid;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  padding: clamp(3rem, 6vw, 5.5rem) 0;
+  border-bottom: 1px solid var(--linje);
+}
+@media (min-width: 56rem) {
+  .n-bolk { grid-template-columns: 18rem 1fr; }
+  /* Grafene og menykortene trenger hele bredden; da legger skinna seg over. */
+  .n-bolk-full { grid-template-columns: 1fr; }
 }
 
-.tall-note {
-  margin: 1.15rem 0 0;
-  font-size: .975rem;
+.n-skinne h2 {
+  margin: 0;
+  font-family: var(--skilt);
+  font-weight: 400;
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-variation-settings: "opsz" 96, "SOFT" 100;
+  line-height: 1;
+  letter-spacing: -.03em;
+  text-wrap: balance;
+}
+.n-skinne .n-under {
+  margin: .9rem 0 0;
+  max-width: 34rem;
+  font-size: 1rem;
   line-height: 1.55;
   color: var(--blekk-mild);
   text-wrap: pretty;
 }
-.tall-note b { color: var(--blekk); font-variant-numeric: tabular-nums; }
+.n-skinne .n-under b { color: var(--blekk); font-variant-numeric: tabular-nums; }
 
-.graf-tittel {
-  margin: 2.4rem 0 1rem;
-  font-size: 1.4rem;
-  font-variation-settings: "opsz" 36;
-  color: var(--blekk);
+.n-spalte { max-width: 38rem; }
+.n-brod { margin: 0; font-size: 1.1rem; line-height: 1.65; text-wrap: pretty; }
+
+/* Staar til teksten om oss er skrevet. Ser bevisst uferdig ut, saa den ikke
+   kan bli staaende ved et uhell. */
+.n-mangler {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px dashed var(--linje-sterk);
+  border-radius: var(--rund-liten);
+  color: var(--blekk-svak);
+  font-style: italic;
 }
 
-/* Hva folk ville ha: liggende stolper, fordi navnene er lange og tallene
-   spriker (195 mot 50). Bredden er andel av vinneren, satt i malen. */
-.rettgraf { display: flex; flex-direction: column; gap: 1rem; margin: 0; padding: 0; list-style: none; }
-.rettgraf li { display: flex; flex-direction: column; gap: .4rem; }
-.rett-navn {
+/* ── Menyen ───────────────────────────────────────────────────────────── */
+
+.n-meny {
+  display: grid;
+  gap: clamp(1rem, 2vw, 1.5rem);
+  margin: clamp(1.5rem, 3vw, 2.5rem) 0 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 44rem) { .n-meny { grid-template-columns: repeat(3, 1fr); } }
+
+.n-rett {
   display: flex;
   flex-direction: column;
+  padding: clamp(1.25rem, 2vw, 1.75rem);
+  border: 1px solid var(--linje);
+  border-radius: var(--rund);
+  background: var(--papir);
+}
+.n-tegning {
+  width: 100%;
+  max-width: 14rem;
+  margin: 0 auto .5rem;
+  aspect-ratio: 1;
+}
+.n-tegning.liten { max-width: 4.5rem; margin: 0; flex: none; }
+.n-tegning svg { width: 100%; height: 100%; }
+
+.n-kode {
+  align-self: flex-start;
+  margin: 0 0 .6rem;
+  padding: .2rem .55rem;
+  border-radius: 6px;
+  background: var(--mork);
+  color: var(--papir);
+  font-size: .8rem;
+  font-weight: 700;
+}
+.n-rett h3 {
+  margin: 0;
   font-family: var(--skilt);
-  font-size: 1.15rem;
-  font-variation-settings: "opsz" 24;
+  font-weight: 400;
+  font-size: 1.6rem;
+  font-variation-settings: "opsz" 48;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.n-undertittel {
+  margin: .5rem 0 0;
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 18;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--blekk-mild);
+}
+.n-ingredienser { flex: 1; margin: .9rem 0 0; font-size: .95rem; line-height: 1.45; }
+.n-allergen {
+  margin: .8rem 0 0;
+  padding-top: .7rem;
+  border-top: 1px solid var(--linje);
+  font-size: .85rem;
+  color: var(--blekk-mild);
+}
+.n-allergen span {
+  font-family: var(--skilt);
+  font-style: italic;
+  margin-right: .35rem;
+  color: var(--blekk-svak);
+}
+
+.n-finstilt {
+  margin: 1.5rem 0 0;
+  max-width: 40rem;
+  font-size: .9rem;
+  line-height: 1.55;
+  color: var(--blekk-svak);
+  text-wrap: pretty;
+}
+
+/* ── Stegene ──────────────────────────────────────────────────────────── */
+
+.n-steg { margin: 0; padding: 0; list-style: none; counter-reset: steg; }
+.n-steg li {
+  display: grid;
+  grid-template-columns: 2.6rem 1fr;
+  gap: .25rem 1.1rem;
+  padding: 1.35rem 0;
+  border-top: 1px solid var(--linje);
+  counter-increment: steg;
+}
+.n-steg li:first-child { border-top: none; padding-top: 0; }
+.n-steg li::before {
+  content: counter(steg);
+  grid-row: 1 / span 2;
+  font-family: var(--skilt);
+  font-weight: 400;
+  font-size: 2rem;
+  font-variation-settings: "opsz" 48, "SOFT" 100;
+  line-height: .9;
+  color: var(--tomat);
+  font-variant-numeric: tabular-nums;
+}
+.n-steg h3 {
+  margin: 0;
+  font-family: var(--skilt);
+  font-weight: 400;
+  font-size: 1.3rem;
+  font-variation-settings: "opsz" 36;
+  text-wrap: balance;
+}
+.n-steg p { margin: .4rem 0 0; max-width: 38rem; font-size: 1rem; line-height: 1.6; color: var(--blekk-mild); text-wrap: pretty; }
+
+/* ── Grafene: time for time ───────────────────────────────────────────── */
+
+.n-grafer { display: grid; gap: clamp(2rem, 4vw, 3rem); margin-top: clamp(1.5rem, 3vw, 2.5rem); }
+@media (min-width: 60rem) {
+  /* Fredag har 10 timer, loerdag 7. Spaltene foelger det, saa soylebredden
+     blir like stor i begge grafene og de kan sammenlignes. */
+  .n-grafer { grid-template-columns: 10fr 7fr; }
+}
+
+.n-kveld { margin: 0; }
+.n-kveld figcaption { display: flex; flex-direction: column; margin-bottom: 1rem; }
+.n-kveld figcaption b {
+  font-family: var(--skilt);
+  font-weight: 400;
+  font-size: 1.35rem;
+  font-variation-settings: "opsz" 36;
+}
+.n-kveld figcaption span { font-size: .875rem; color: var(--blekk-svak); font-variant-numeric: tabular-nums; }
+
+.n-timer {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(3px, .6vw, 8px);
+  margin: 0;
+  padding: 0 0 5px;
+  border-bottom: 1px solid var(--linje-sterk);
+  list-style: none;
+}
+.n-timer li { flex: 1; min-width: 0; text-align: center; }
+
+/* Stapelen er sporet soyla staar i: FAST hoyde, innhold presset ned, saa
+   tallet alltid ligger rett oppaa soyla. `flex: none` paa soyla er ikke
+   pynt — uten den krymper flex den hoyeste soyla for aa gi plass til tallet,
+   og topptimen blir den laveste stolpen i grafen. */
+.n-stapel {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  height: 12.9rem;          /* 11rem soyle + tallet over med klaring */
+}
+.n-soyletall {
+  flex: none;
+  margin-bottom: 3px;
+  font-family: var(--mono);
+  font-size: .75rem;
+  line-height: 1;
+  color: var(--blekk-mild);
+  font-variant-numeric: tabular-nums;
+}
+.n-soyle {
+  flex: none;
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--skinke);
+}
+.n-klokke {
+  display: block;
+  margin-top: .45rem;
+  font-family: var(--mono);
+  font-size: .7rem;
+  line-height: 1;
+  color: var(--blekk-svak);
+  font-variant-numeric: tabular-nums;
+}
+/* Topptimen er hele poenget med grafen, saa den er den ene som er full tomat. */
+.n-timer li.hoyest .n-soyle { background: var(--tomat); }
+.n-timer li.hoyest .n-soyletall { color: var(--tomat); font-weight: 700; }
+.n-timer li.hoyest .n-klokke { color: var(--tomat); }
+
+/* ── Hva folk ville ha ────────────────────────────────────────────────── */
+
+.n-retter { display: flex; flex-direction: column; gap: 1.5rem; margin: clamp(1.5rem, 3vw, 2.5rem) 0 0; padding: 0; list-style: none; }
+.n-retter li { display: grid; grid-template-columns: 4.5rem 1fr auto; gap: 1.1rem; align-items: center; }
+.n-rettinfo { min-width: 0; }
+.n-rettinfo h3 {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 .5rem;
+  font-family: var(--skilt);
+  font-weight: 400;
+  font-size: 1.3rem;
+  font-variation-settings: "opsz" 30;
   line-height: 1.15;
 }
-.rett-navn small {
-  font-family: var(--brod);
-  font-size: .8rem;
-  color: var(--blekk-svak);
-  letter-spacing: .01em;
-}
-.rettgraf .stolpe {
+.n-rettinfo h3 small { font-family: var(--brod); font-size: .8rem; color: var(--blekk-svak); }
+.n-stolpe {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   width: var(--andel);
-  min-width: 3.1rem;          /* tallet skal alltid ha plass inni stolpen */
-  height: 2.1rem;
-  padding-right: .6rem;
-  border-radius: 5px;
+  min-width: 3.4rem;        /* tallet skal alltid ha plass inni stolpen */
+  height: 2.3rem;
+  padding-right: .7rem;
+  border-radius: 6px;
   background: var(--tomat);
 }
-.rettgraf .stolpe b {
-  font-family: var(--mono);
-  font-size: .95rem;
-  font-weight: 600;
-  color: var(--papir);
-  font-variant-numeric: tabular-nums;
-}
+.n-stolpe b { font-family: var(--mono); font-size: 1rem; font-weight: 700; color: var(--papir); font-variant-numeric: tabular-nums; }
+.n-andel { margin: 0; font-size: 1.05rem; color: var(--blekk-mild); font-variant-numeric: tabular-nums; }
 
-/* Kveldene time for time. To grafer med SAMME hoydeskala, slik at fredag og
-   loerdag kan sammenlignes med oyet — toppen er 49 i begge. */
-.kveldgraf { margin: 0 0 1.6rem; }
-.kveldgraf figcaption {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: .6rem;
+/* ── Om tallene ───────────────────────────────────────────────────────── */
+
+.n-noter { margin: 0 0 2rem; }
+.n-noter dt {
+  margin-top: 1.35rem;
   font-family: var(--skilt);
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   font-variation-settings: "opsz" 24;
+  color: var(--blekk);
 }
-.kveldgraf figcaption span {
-  font-family: var(--brod);
-  font-size: .8rem;
-  color: var(--blekk-svak);
-  font-variant-numeric: tabular-nums;
-}
+.n-noter dt:first-child { margin-top: 0; }
+.n-noter dd { margin: .3rem 0 0; font-size: .975rem; line-height: 1.6; color: var(--blekk-mild); text-wrap: pretty; }
 
-.timer {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
+/* ── Toppen paa /helga ────────────────────────────────────────────────── */
+
+.n-topp { padding: clamp(2.5rem, 6vw, 5rem) 0 clamp(2rem, 4vw, 3rem); }
+.n-topp h1 {
   margin: 0;
-  padding: 0 0 4px;
-  /* Grunnlinja rammer inn grafen. Uten den leser lufta over fredagens soyler
-     som et hull — den er egentlig informasjon: fredagen naadde aldri opp til
-     loerdagens topptime, og begge grafene har med vilje samme skala. */
-  border-bottom: 1px solid var(--linje);
-  list-style: none;
+  font-family: var(--skilt);
+  font-weight: 400;
+  font-size: clamp(2.8rem, 9vw, 6rem);
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+  line-height: .92;
+  letter-spacing: -.04em;
 }
-/* Klassenavna her er bevisst egne. `.antall` er alt den store pluss/minus-
-   raden i menyen, og `.topp` er hodet paa kundesida med 2,75rem toppluft —
-   begge slo inn i grafen og gjorde topptimen til den laveste soyla. Sjekk
-   stilarket for kollisjon foer du doeper noe nytt her. */
-.timer li { flex: 1; min-width: 0; text-align: center; }
 
-/* Stapelen er sporet soyla staar i: fast hoyde, innhold presset nedover, saa
-   tallet alltid ligger rett oppaa soyla — ogsaa naar den er lav. `flex: none`
-   paa soyla er ikke pynt: uten den krymper flex den hoyeste soyla for aa gi
-   plass til tallet, og topptimen blir den laveste stolpen i grafen. */
-.stapel {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  height: 8.4rem;           /* 6.5rem soyle + tallet over med klaring */
-}
-.timer .soyletall {
-  flex: none;
-  margin-bottom: 2px;
-  font-family: var(--mono);
-  font-size: .62rem;
-  line-height: 1;
-  color: var(--blekk-svak);
-  font-variant-numeric: tabular-nums;
-}
-.timer .soyle {
-  flex: none;
-  width: 100%;
-  min-height: 2px;
-  border-radius: 3px 3px 0 0;
-  background: var(--skinke);
-}
-.timer .klokke {
-  display: block;
-  margin-top: 3px;
-  font-family: var(--mono);
-  font-size: .62rem;
-  line-height: 1;
-  color: var(--blekk-svak);
-  font-variant-numeric: tabular-nums;
-}
-/* Topptimen er hele poenget med grafen, saa den skal vaere den ene som er
-   full tomat. Resten er skinkerosa og lener seg tilbake. */
-.timer li.hoyest .soyle { background: var(--tomat); }
-.timer li.hoyest .soyletall { color: var(--tomat); font-weight: 600; }
+/* ── Ta kontakt + bunn ────────────────────────────────────────────────── */
 
-/* Grafen leses med oyet; skjermleseren faar samme tall som tekst.
-   Navnet er langt med vilje: `.skjult` ligger ett tegn fra `.skjulte`, som er
-   angrelista i admin. */
+.n-kontakt { padding: clamp(3rem, 6vw, 5.5rem) 0; text-align: center; }
+.n-kontakt h2 {
+  margin: 0;
+  font-family: var(--skilt);
+  font-weight: 400;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-variation-settings: "opsz" 96, "SOFT" 100;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+.n-kontakt p { margin: .9rem auto 1.75rem; max-width: 30rem; color: var(--blekk-mild); }
+
+.n-bunn { padding: clamp(2rem, 4vw, 3rem) 0 3.5rem; border-top: 1px solid var(--linje); text-align: center; }
+.n-slagord {
+  margin: 0 0 1.25rem;
+  font-family: var(--skilt);
+  font-style: italic;
+  font-variation-settings: "opsz" 96, "SOFT" 100;
+  font-size: clamp(1.5rem, 3.5vw, 2.1rem);
+  color: var(--tomat);
+}
+.n-bunnvei { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1.5rem; font-size: .95rem; }
+.n-bunnvei a { color: var(--blekk); text-decoration: none; border-bottom: 1px solid var(--linje-sterk); }
+.n-bunnvei a:hover { color: var(--tomat); border-bottom-color: var(--tomat); }
+.n-adresse { margin: 1.1rem 0 0; font-size: .875rem; color: var(--blekk-svak); }
+.n-adresse a { color: inherit; }
+
+/* Grafen leses med oyet; skjermleseren faar samme tall som tekst. */
 .for-skjermleser {
   position: absolute;
   width: 1px; height: 1px;
@@ -719,60 +1029,6 @@ small { display: block; margin-top: .4rem; font-size: .875rem; color: var(--blek
   clip-path: inset(50%);
   white-space: nowrap;
 }
-
-/* ── Minnesida: om oss ─────────────────────────────────────────────────── */
-
-.omoss h2.andre { margin-top: 2.75rem; }
-
-/* Midlertidig: staar til teksten om oss er skrevet. Den ser bevisst uferdig
-   ut, slik at den ikke kan bli staaende ved et uhell. */
-.mangler-tekst {
-  margin: 0 0 1.1rem;
-  padding: .9rem 1.1rem;
-  border: 1px dashed var(--linje-sterk);
-  border-radius: var(--rund-liten);
-  color: var(--blekk-svak);
-  font-style: italic;
-}
-
-.omoss .slutt { margin: 0; font-size: 1.05rem; line-height: 1.6; text-wrap: pretty; }
-
-/* Veien en pizza tok. Tallene er ekte rekkefolge, ikke pynt, saa de er store
-   nok til aa leses som steg. */
-.steg-liste { margin: 0; padding: 0; list-style: none; counter-reset: steg; }
-.steg-liste li {
-  display: grid;
-  grid-template-columns: 2.1rem 1fr;
-  gap: .2rem .9rem;
-  padding: 1.15rem 0;
-  border-top: 1px solid var(--linje);
-  counter-increment: steg;
-}
-.steg-liste li:last-child { border-bottom: 1px solid var(--linje); }
-.steg-liste li::before {
-  content: counter(steg);
-  grid-row: 1 / span 2;
-  font-family: var(--skilt);
-  font-size: 1.6rem;
-  font-variation-settings: "opsz" 36, "SOFT" 100;
-  line-height: 1;
-  color: var(--tomat);
-  font-variant-numeric: tabular-nums;
-}
-.steg-liste h3 { font-size: 1.2rem; font-variation-settings: "opsz" 30; text-wrap: balance; }
-.steg-liste p { margin: .35rem 0 0; font-size: .975rem; line-height: 1.55; color: var(--blekk-mild); text-wrap: pretty; }
-
-/* ── Minnesida: ta kontakt ─────────────────────────────────────────────── */
-
-.ta-kontakt {
-  padding: 1.6rem 1.35rem 1.75rem;
-  border: 1px solid var(--linje);
-  border-radius: var(--rund);
-  background: var(--papir-varm);
-  text-align: center;
-}
-.ta-kontakt h2 { font-size: 1.9rem; font-variation-settings: "opsz" 60; text-wrap: balance; }
-.ta-kontakt p { margin: .6rem 0 1.15rem; font-size: .975rem; color: var(--blekk-mild); text-wrap: pretty; }
 
 /* ── Kvittering ───────────────────────────────────────────────────────── */
 

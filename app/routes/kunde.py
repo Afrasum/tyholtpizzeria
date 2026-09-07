@@ -55,8 +55,29 @@ def _forsidedata(kob, **ekstra) -> dict:
 
 @ruter.get("/", response_class=HTMLResponse)
 def forside(request: Request):
+    """Bestillingsskjema naar det er aapent, nettside naar det er stengt.
+
+    To ULIKE maler framfor en if-grein inni én: forside.html er tunet for en
+    34 rem telefonspalte med klistrekurv og pluss/minus-felt, og hjem.html er
+    en bred nettside. Aa presse begge inn i samme fil var nettopp det som
+    gjorde at grafene ble klemt og at bestillingsveien maatte leses gjennom
+    for aa se om den fortsatt var hel.
+    """
     with kobling() as kob:
-        return maler.TemplateResponse(request, "kunde/forside.html", _forsidedata(kob))
+        data = _forsidedata(kob)
+        mal = "kunde/forside.html" if data["aapent"] else "kunde/hjem.html"
+        return maler.TemplateResponse(request, mal, data)
+
+
+@ruter.get("/helga", response_class=HTMLResponse)
+def helga(request: Request):
+    """Tallene fra 4.–5. september. Alltid naabar, ogsaa under en ny pop-up."""
+    with kobling() as kob:
+        return maler.TemplateResponse(
+            request,
+            "kunde/helga.html",
+            {"innst": innstillinger.alle(kob), **minne.alt()},
+        )
 
 
 @ruter.post("/bestill")

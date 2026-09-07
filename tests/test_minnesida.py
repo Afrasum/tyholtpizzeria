@@ -96,7 +96,12 @@ def test_minnet_har_ingen_personopplysninger():
 # ── Forsida ──────────────────────────────────────────────────────────────────
 
 
-def test_stengt_forside_viser_tallene_og_ingen_bestillingsknapp(tmp_path, monkeypatch):
+def test_stengt_forside_er_nettsida_og_ikke_skjemaet(tmp_path, monkeypatch):
+    """Stengt «/» skal rendre hjem.html, ikke bestillingsmalen.
+
+    De to malene er helt ulike sider. Denne testen er det som fanger at ruta
+    plukker feil av dem.
+    """
     db = _oppsett(tmp_path, monkeypatch)
     from app import innstillinger, minne
 
@@ -105,28 +110,63 @@ def test_stengt_forside_viser_tallene_og_ingen_bestillingsknapp(tmp_path, monkey
     assert svar.status_code == 200
     kropp = svar.text
 
-    # Tallene skal staa der.
     assert str(minne.PIZZAER) in kropp
     assert "Helga i tall" in kropp
     assert "Menyen vi hadde" in kropp
-    # Bestillingsveien skal vaere borte.
+    assert "Hvordan det virket" in kropp
+    assert 'href="/helga"' in kropp
+    # Bestillingsveien skal ikke finnes i det hele tatt.
     assert 'name="kundenavn"' not in kropp
     assert "Send bestilling" not in kropp
-    # Det gamle raude «midlertidig stengt»-varselet hoerer ikke til her.
+    assert 'action="/bestill"' not in kropp
+    # Det roede «midlertidig stengt»-varselet hoerer til en pause under
+    # service, ikke til en nettside.
     assert "midlertidig stengt" not in kropp
 
 
-def test_aapen_forside_er_urort(tmp_path, monkeypatch):
-    """Bestillingsveien skal vaere noyaktig som foer naar det er aapent."""
+def test_aapen_forside_er_bestillingsskjemaet_urort(tmp_path, monkeypatch):
+    """Aapen «/» skal vaere forside.html, noeyaktig som foer."""
     db = _oppsett(tmp_path, monkeypatch)
     svar = _klient(db).get("/")
     assert svar.status_code == 200
     kropp = svar.text
     assert 'name="kundenavn"' in kropp
     assert "Send bestilling" in kropp
-    # Minnesida skal ikke vises midt i en service.
-    assert "Helga i tall" not in kropp
+    assert 'id="kurv"' in kropp
+    # Nettsida skal ikke blande seg inn i en service.
     assert "Hvordan det virket" not in kropp
+    assert "Menyen vi hadde" not in kropp
+
+
+def test_helga_er_naabar_i_begge_tilstander(tmp_path, monkeypatch):
+    """Tallsida er permanent. Den skal ikke forsvinne fordi vi aapner igjen."""
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import innstillinger, minne
+
+    klient = _klient(db)
+    for stengt in ("0", "1"):
+        innstillinger.sett("manuelt_stengt", stengt)
+        svar = klient.get("/helga")
+        assert svar.status_code == 200, stengt
+        assert "Da det sto på" in svar.text
+        assert str(minne.TOPPTIME) in svar.text
+
+
+def test_helga_viser_hver_time_fra_begge_kveldene(tmp_path, monkeypatch):
+    """Grafen skal ha en soyle per time, med hoyde satt i rem.
+
+    Prosenthoyder inne i et spor som maaler seg etter innholdet er sirkulaere,
+    og da kollapset nettopp den hoyeste soyla. Testen holder rem-formen fast.
+    """
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import minne
+
+    kropp = _klient(db).get("/helga").text
+    antall_soyler = kropp.count('class="n-soyle"')
+    assert antall_soyler == sum(len(k["timer"]) for k in minne.KVELDER)
+    assert "rem" in kropp.split('class="n-soyle" style="height: ')[1][:12]
+    # Topptimen skal vaere merket, og bare den.
+    assert kropp.count('class="hoyest"') == 1
 
 
 # ── Kvitteringene ────────────────────────────────────────────────────────────

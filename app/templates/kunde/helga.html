@@ -1,0 +1,137 @@
+{# Helga i tall. Egen side, fordi tallene er hovedinnholdet og fortjener
+   bredden — grafene per time er 10 og 7 soyler brede og var klemt til
+   uleselighet i en 34 rem spalte.
+
+   Alt kommer fra app/minne.py og er FROSSET. Se docstringen der for hvorfor
+   ingen av tallene hentes levende. Ingen personopplysninger — bare summer. #}
+{% extends "base.html" %}
+{% block tittel %}Helga i tall — Tyholt Pizzeria{% endblock %}
+{% block kropp_klasse %}nettside{% endblock %}
+
+{% block innhold %}
+<main class="nett">
+
+  <header class="n-topp">
+    <p class="n-merke"><a href="/">Tyholt Pizzeria</a> · {{ datoer }}</p>
+    <h1>Helga i tall</h1>
+    <p class="n-lopetekst">
+      To kvelder, ett bord, tre pizzaer på menyen og
+      <b>{{ pizzaer }}</b> esker ut døra.
+    </p>
+  </header>
+
+  <section class="n-tavle bred">
+    <ul class="n-tall">
+      <li><b>{{ pizzaer }}</b><span>pizzaer ut av ovnen</span></li>
+      <li><b>{{ bestillinger }}</b><span>bestillinger</span></li>
+      <li><b>{{ median_minutter }}<i>min</i></b><span>fra bestilling til klar</span></li>
+      <li><b>{{ "{:,}".format(kroner).replace(",", " ") }}<i>kr</i></b><span>over disken</span></li>
+    </ul>
+  </section>
+
+  {# ── Time for time ────────────────────────────────────────────────────── #}
+  <section class="n-bolk n-bolk-full">
+    <div class="n-skinne">
+      <p class="n-merke">01</p>
+      <h2>Da det sto på</h2>
+      <p class="n-under">
+        Begge kveldene har samme skala, så lufta over fredagen er ekte:
+        den nådde aldri opp til lørdagens topptime på
+        <b>{{ topptime }}</b> pizzaer.
+      </p>
+    </div>
+
+    <div class="n-grafer">
+      {# SOYLEHOYDE i rem, ikke prosent. En prosenthoyde inne i et spor som
+         selv maaler seg etter innholdet er sirkulaer, og da kollapser nettopp
+         den hoyeste soyla til en strek. #}
+      {% set SOYLEHOYDE = 11 %}
+      {% for kveld in kvelder %}
+      <figure class="n-kveld">
+        <figcaption>
+          <b>{{ kveld.navn }}</b>
+          <span>{{ kveld.fra }}–{{ kveld.til }} · {{ kveld.pizzaer }} pizzaer</span>
+        </figcaption>
+        <ul class="n-timer">
+          {% for klokke, antall in kveld.timer %}
+          <li class="{% if antall == topptime %}hoyest{% endif %}">
+            <span class="n-stapel">
+              <span class="n-soyletall">{{ antall }}</span>
+              <span class="n-soyle" style="height: {{ (antall / topptime * SOYLEHOYDE) | round(3) }}rem"></span>
+            </span>
+            <span class="n-klokke">{{ "%02d" % klokke }}</span>
+            <span class="for-skjermleser">Kl. {{ "%02d" % klokke }}: {{ antall }} pizzaer</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </figure>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ── Hva folk ville ha ────────────────────────────────────────────────── #}
+  <section class="n-bolk n-bolk-full">
+    <div class="n-skinne">
+      <p class="n-merke">02</p>
+      <h2>Hva folk ville ha</h2>
+      <p class="n-under">
+        Skinke tok nesten to av tre. Bredden er andel av den mest solgte, så
+        vinneren fyller linja og de andre leses mot den.
+      </p>
+    </div>
+    <ul class="n-retter">
+      {% for kallenavn, navn, antall in retter %}
+      <li>
+        <div class="n-tegning liten" aria-hidden="true">
+          <svg viewBox="0 0 500 500"><use href="#pizza-{{ {'Skinke':'skinke','Margherita':'margherita','Hvit pizza med pære':'paere'}.get(navn, 'bunn') }}"></use></svg>
+        </div>
+        <div class="n-rettinfo">
+          <h3>{{ kallenavn }}<small>{{ navn }}</small></h3>
+          <span class="n-stolpe" style="--andel: {{ (antall / retter[0][2] * 100) | round(1) }}%">
+            <b>{{ antall }}</b>
+          </span>
+        </div>
+        <p class="n-andel mono">{{ (antall / pizzaer * 100) | round | int }}&nbsp;%</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {# ── Hvordan tallene er regnet ut ─────────────────────────────────────── #}
+  <section class="n-bolk">
+    <div class="n-skinne">
+      <p class="n-merke">03</p>
+      <h2>Om tallene</h2>
+    </div>
+    <div class="n-spalte">
+      <dl class="n-noter">
+        <dt>Hva som er talt</dt>
+        <dd>Alle bestillinger som ikke ble avbrutt eller forlatt — {{ bestillinger }}
+          av 208. De to som falt ut var én kunde som aldri kom, og én
+          feilbestilling.</dd>
+
+        <dt>Kveld, ikke kalenderdøgn</dt>
+        <dd>Bestillingen som kom 00:06 natt til lørdag er talt på fredagens
+          kveld, der den hører. Summen er den samme.</dd>
+
+        <dt>{{ median_minutter }} minutter</dt>
+        <dd>Median fra bestilling til «klar til henting», ikke snitt. Snittet
+          er 8,3 og medianen 8,2 — de er så like her at medianen er den
+          ærligste av dem. Den tregeste var {{ tregeste_minutter }} minutter.</dd>
+
+        <dt>Kronene</dt>
+        <dd>{{ pizzaer }} pizzaer til 59 kr. Det er hele regnestykket — det
+          var én pris på alt.</dd>
+
+        <dt>Frosset</dt>
+        <dd>Tallene ble regnet ut én gang etter at vi stengte, og ligger i
+          koden. De teller ikke videre, og de kan ikke nullstilles av et
+          uhell i admin.</dd>
+      </dl>
+      <a class="n-knapp" href="/">← Tilbake til forsida</a>
+    </div>
+  </section>
+
+  {% include "kunde/_bunn.html" %}
+</main>
+{% endblock %}
