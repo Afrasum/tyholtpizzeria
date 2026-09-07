@@ -69,7 +69,7 @@
           <span class="soyle" style="height: {{ (antall / topptime * SOYLEHOYDE) | round(3) }}rem"></span>
         </span>
         <span class="klokke">{{ klokke }}</span>
-        <span class="skjult">Kl. {{ "%02d" % klokke }}: {{ antall }} pizzaer</span>
+        <span class="for-skjermleser">Kl. {{ "%02d" % klokke }}: {{ antall }} pizzaer</span>
       </li>
       {% endfor %}
     </ul>

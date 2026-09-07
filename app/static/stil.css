@@ -708,8 +708,10 @@ small { display: block; margin-top: .4rem; font-size: .875rem; color: var(--blek
 .timer li.hoyest .soyle { background: var(--tomat); }
 .timer li.hoyest .soyletall { color: var(--tomat); font-weight: 600; }
 
-/* Grafen leses med oyet; skjermleseren faar samme tall som tekst. */
-.skjult {
+/* Grafen leses med oyet; skjermleseren faar samme tall som tekst.
+   Navnet er langt med vilje: `.skjult` ligger ett tegn fra `.skjulte`, som er
+   angrelista i admin. */
+.for-skjermleser {
   position: absolute;
   width: 1px; height: 1px;
   margin: -1px; padding: 0;

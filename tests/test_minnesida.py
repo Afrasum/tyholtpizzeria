@@ -5,6 +5,7 @@ Kjøres med: uv run pytest tests -q
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -82,7 +83,14 @@ def test_minnet_har_ingen_personopplysninger():
     from app import minne
 
     tekst = Path(minne.__file__).read_text()
-    assert "@" not in tekst.split('"""')[2], "e-postadresse i minne.py?"
+    # Regex over hele fila framfor aa splitte paa docstringen: en indeks inn i
+    # docstringen brekker — eller blir stille sann — neste gang noen skriver om
+    # kommentaren oeverst.
+    adresser = re.findall(r"[\w.+-]+@[\w-]+\.[\w.]+", tekst)
+    assert not adresser, f"e-postadresse i minne.py: {adresser}"
+    # Fornavna fra basen har ingenting aa gjore her heller. Modulen skal
+    # inneholde tall, ikke rader.
+    assert "kundenavn" not in tekst
 
 
 # ── Forsida ──────────────────────────────────────────────────────────────────
