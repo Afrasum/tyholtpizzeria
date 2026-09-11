@@ -233,6 +233,41 @@ def test_om_oss_avsnitt_havner_paa_sida(tmp_path, monkeypatch):
     assert "Vi liker deig." in kropp
 
 
+def test_instagram_lenka_er_rein(tmp_path, monkeypatch):
+    """URL-en bygges av brukernavnet, ikke limt inn fra en delingslenke.
+
+    Instagrams «del»-knapp gir en URL med utm_source og en `stkn`-token som
+    hoerer til den som delte. Den skal aldri ut paa en offentlig side.
+    """
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import innstillinger
+
+    klient = _klient(db)
+    innstillinger.sett("manuelt_stengt", "1")
+    for sti in ("/", "/helga"):
+        kropp = klient.get(sti).text
+        assert "https://www.instagram.com/tyholt_pizzeria/" in kropp, sti
+        assert "utm_source" not in kropp, sti
+        assert "stkn=" not in kropp, sti
+    # Ogsaa paa bestillingssida.
+    innstillinger.sett("manuelt_stengt", "0")
+    kropp = klient.get("/").text
+    assert "instagram.com/tyholt_pizzeria/" in kropp
+    assert "stkn=" not in kropp
+
+
+def test_uten_instagram_forsvinner_lenkene_heilt(tmp_path, monkeypatch):
+    """Tom innstilling skal fjerne lenkene, ikke gi en lenke til ingenting."""
+    db = _oppsett(tmp_path, monkeypatch)
+    from app import innstillinger
+
+    innstillinger.sett("instagram", "")
+    innstillinger.sett("manuelt_stengt", "1")
+    kropp = _klient(db).get("/").text
+    assert "instagram.com" not in kropp
+    assert "Følg oss" not in kropp
+
+
 # ── Kvitteringene ────────────────────────────────────────────────────────────
 
 

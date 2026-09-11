@@ -146,6 +146,12 @@
     <div class="kontakt">
       <a class="adresse" href="https://maps.google.com/?q=Tyholtveien+25,+7052+Trondheim">Tyholtveien 25, 7052 Trondheim</a>
       <a href="mailto:hei@tyholtpizzeria.com">hei@tyholtpizzeria.com</a>
+      {% if innst.instagram %}
+      <a class="ig" href="https://www.instagram.com/{{ innst.instagram }}/" rel="me noopener" target="_blank">
+        <svg class="n-ikon" aria-hidden="true"><use href="#instagram"></use></svg>
+        @{{ innst.instagram }}
+      </a>
+      {% endif %}
     </div>
   </footer>
 </main>

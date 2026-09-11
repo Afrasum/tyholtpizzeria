@@ -507,6 +507,7 @@ small { display: block; margin-top: .4rem; font-size: .875rem; color: var(--blek
 }
 .bunn .kontakt { display: flex; flex-direction: column; gap: .5rem; font-size: .95rem; color: var(--blekk-mild); }
 .bunn .kontakt a { text-decoration: none; }
+.bunn .kontakt .ig { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; }
 .bunn .adresse { align-self: center; padding-bottom: 2px; border-bottom: 1px solid rgba(30, 20, 14, .25); color: var(--blekk); }
 
 /* ── Nettsida (hjem.html, helga.html) ──────────────────────────────────────
@@ -616,6 +617,11 @@ body.nettside { background: var(--fersken); }
 }
 
 .n-veier { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
+.n-veier.midtstilt { justify-content: center; margin-top: 0; }
+
+/* Merket foelger currentColor, saa den samme SVG-en virker paa fersken bunn,
+   paa morkt banner og i bunnteksten uten en eneste variant. */
+.n-ikon { width: 1.15em; height: 1.15em; flex: none; }
 
 /* Klasen: tre tegninger som ligger delvis over hverandre, som esker paa et
    bord. Aspect-ratio holder ruta kvadratisk saa de ikke sklir naar spalta
@@ -1005,7 +1011,14 @@ body.nettside { background: var(--fersken); }
   color: var(--tomat);
 }
 .n-bunnvei { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1.5rem; font-size: .95rem; }
-.n-bunnvei a { color: var(--blekk); text-decoration: none; border-bottom: 1px solid var(--linje-sterk); }
+.n-bunnvei a {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--blekk);
+  text-decoration: none;
+  border-bottom: 1px solid var(--linje-sterk);
+}
 .n-bunnvei a:hover { color: var(--tomat); border-bottom-color: var(--tomat); }
 .n-adresse { margin: 1.1rem 0 0; font-size: .875rem; color: var(--blekk-svak); }
 .n-adresse a { color: inherit; }

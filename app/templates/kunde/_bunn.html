@@ -6,6 +6,12 @@
     <a href="/">Forsida</a>
     <a href="/helga">Helga i tall</a>
     <a href="mailto:hei@tyholtpizzeria.com">hei@tyholtpizzeria.com</a>
+    {% if innst.instagram %}
+    <a href="https://www.instagram.com/{{ innst.instagram }}/" rel="me noopener" target="_blank">
+      <svg class="n-ikon" aria-hidden="true"><use href="#instagram"></use></svg>
+      @{{ innst.instagram }}
+    </a>
+    {% endif %}
   </nav>
   <p class="n-adresse">
     <a href="https://maps.google.com/?q=Tyholtveien+25,+7052+Trondheim">{{ sted }}</a>

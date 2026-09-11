@@ -15,6 +15,9 @@ STANDARD = {
     "vipps_mottaker_id": "",
     "manuelt_stengt": "0",
     "stedsnavn": "Tyholt Pizzeria",
+    # Instagram-brukernavnet, uten @ og uten lenke. Malene bygger URL-en, saa
+    # ingen kan komme til aa lime inn en delingslenke med sporingsparametre.
+    "instagram": "tyholt_pizzeria",
 }
 
 # Vipps-appen apner en betaling direkte pa denne formen. Prefikset er fast;

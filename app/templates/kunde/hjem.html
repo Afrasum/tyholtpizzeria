@@ -27,10 +27,20 @@
       </p>
       <p class="n-status">
         Vi er stengt nå, men dukker opp igjen ved anledninger.
+        {% if innst.instagram %}Det står på Instagram først.{% endif %}
       </p>
       <div class="n-veier">
         <a class="n-knapp primar" href="/helga">Se helga i tall</a>
-        <a class="n-knapp" href="#ta-kontakt">Skal du ha pizza til noe?</a>
+        {% if innst.instagram %}
+        {# URL-en bygges av brukernavnet. Delingslenker fra appen har
+           utm_source og en stkn-token som hoerer til den som delte — de skal
+           aldri ut paa en offentlig side. #}
+        <a class="n-knapp" href="https://www.instagram.com/{{ innst.instagram }}/"
+           rel="me noopener" target="_blank">
+          <svg class="n-ikon" aria-hidden="true"><use href="#instagram"></use></svg>
+          @{{ innst.instagram }}
+        </a>
+        {% endif %}
       </div>
     </div>
 
@@ -162,8 +172,18 @@
   {# ── Ta kontakt ───────────────────────────────────────────────────────── #}
   <section class="n-kontakt" id="ta-kontakt">
     <h2>Skal du ha pizza til noe?</h2>
-    <p>Vi lover ingenting om kapasitet eller pris, men spør gjerne.</p>
-    <a class="n-knapp primar" href="mailto:hei@tyholtpizzeria.com?subject=Pizza%20til%20noe">Send en mail</a>
+    <p>Vi lover ingenting om kapasitet eller pris, men spør gjerne. Vil du
+      bare vite når vi dukker opp igjen, følg oss{% if innst.instagram %} på Instagram{% endif %}.</p>
+    <div class="n-veier midtstilt">
+      <a class="n-knapp primar" href="mailto:hei@tyholtpizzeria.com?subject=Pizza%20til%20noe">Send en mail</a>
+      {% if innst.instagram %}
+      <a class="n-knapp" href="https://www.instagram.com/{{ innst.instagram }}/"
+         rel="me noopener" target="_blank">
+        <svg class="n-ikon" aria-hidden="true"><use href="#instagram"></use></svg>
+        Følg oss
+      </a>
+      {% endif %}
+    </div>
   </section>
 
   {% include "kunde/_bunn.html" %}
