@@ -25,7 +25,7 @@
       <li><b>{{ pizzaer_vist }}</b><span>pizzaer solgt</span></li>
       <li><b>{{ bestillinger }}</b><span>bestillinger</span></li>
       <li><b>{{ median_minutter }}<i>min</i></b><span>vanlig ventetid</span></li>
-      <li><b>{{ "{:,}".format(kroner).replace(",", " ") }}<i>kr</i></b><span>i registrert salg</span></li>
+      <li><b>{{ "{:,}".format(inntekter).replace(",", " ") }}<i>kr</i></b><span>i inntekter</span></li>
     </ul>
   </section>
 
@@ -103,10 +103,9 @@
     </div>
     <div class="n-spalte">
       <dl class="n-noter">
-        <dt>300+, og {{ pizzaer }}</dt>
-        <dd>Vi solgte minst {{ pizzaer_minst }} pizzaer, men noen gikk utenom
-          systemet, så bare {{ pizzaer }} ble registrert. Grafene, prosentene
-          og kronebeløpet er regnet ut fra de {{ pizzaer }}.</dd>
+        <dt>Hvorfor {{ pizzaer }}?</dt>
+        <dd>Noen pizzaer ble solgt utenom systemet. Grafene og prosentene
+          bygger på de {{ pizzaer }} som ble registrert.</dd>
 
         <dt>Hva som er talt</dt>
         <dd>{{ bestillinger }} av 208 bestillinger er med. De to som mangler
@@ -121,9 +120,13 @@
           {{ median_minutter }} minutter (medianen var 8,2 og snittet 8,3).
           Lengste ventetid var {{ tregeste_minutter }} minutter.</dd>
 
-        <dt>Kronene</dt>
-        <dd>{{ pizzaer }} registrerte pizzaer à 59 kr. Pizzaene som ble solgt
-          utenom systemet er ikke med.</dd>
+        <dt>Regnestykket</dt>
+        <dd>Vi tok inn {{ "{:,}".format(inntekter).replace(",", " ") }} kr og
+          hadde {{ "{:,}".format(utgifter).replace(",", " ") }} kr i utgifter,
+          pizzaovnen ikke medregnet. Det ble
+          {{ "{:,}".format(overskudd).replace(",", " ") }} kr igjen. Vi var
+          {{ personer }} stykker som jobbet {{ timer }} timer til sammen, så
+          timelønna landet på rundt {{ timelonn }} kr.</dd>
 
         <dt>Faste tall</dt>
         <dd>Tallene ble regnet ut etter at vi stengte, og de endrer seg

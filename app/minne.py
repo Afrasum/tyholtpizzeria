@@ -35,6 +35,15 @@ PIZZAER_VIST = "300+"      # det overskriftene sier
 BESTILLINGER = 206
 KRONER = PIZZAER * 59      # av de loggede. Alt kostet 59 kr.
 
+# Regnskapet, fra regnearket. Inntektene er det som faktisk kom inn, ikke
+# KRONER over. Utgiftene er uten pizzaovnen.
+INNTEKTER = 16475
+UTGIFTER = 9374
+OVERSKUDD = INNTEKTER - UTGIFTER
+TIMER = 190                # alle sine timer til sammen
+PERSONER = 11
+TIMELONN = round(OVERSKUDD / TIMER)
+
 # Median, ikke snitt. Snittet er 8,3 og medianen 8,2 — de er like her, og da
 # er medianen den ærligste av dem.
 MEDIAN_MINUTTER = 8
@@ -107,6 +116,12 @@ def alt() -> dict:
         "pizzaer_minst": PIZZAER_MINST,
         "bestillinger": BESTILLINGER,
         "kroner": KRONER,
+        "inntekter": INNTEKTER,
+        "utgifter": UTGIFTER,
+        "overskudd": OVERSKUDD,
+        "timer": TIMER,
+        "personer": PERSONER,
+        "timelonn": TIMELONN,
         "median_minutter": MEDIAN_MINUTTER,
         "tregeste_minutter": TREGESTE_MINUTTER,
         "datoer": DATOER,
