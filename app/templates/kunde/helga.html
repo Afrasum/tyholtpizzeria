@@ -16,16 +16,16 @@
     <h1>Helga i tall</h1>
     <p class="n-lopetekst">
       To kvelder, ett bord, tre pizzaer på menyen og
-      <b>{{ pizzaer_vist }}</b> esker ut døra.
+      <b>{{ pizzaer_vist }}</b> solgt.
     </p>
   </header>
 
   <section class="n-tavle bred">
     <ul class="n-tall">
-      <li><b>{{ pizzaer_vist }}</b><span>pizzaer ut av ovnen</span></li>
+      <li><b>{{ pizzaer_vist }}</b><span>pizzaer solgt</span></li>
       <li><b>{{ bestillinger }}</b><span>bestillinger</span></li>
-      <li><b>{{ median_minutter }}<i>min</i></b><span>fra bestilling til klar</span></li>
-      <li><b>{{ "{:,}".format(kroner).replace(",", " ") }}<i>kr</i></b><span>registrert over disken</span></li>
+      <li><b>{{ median_minutter }}<i>min</i></b><span>vanlig ventetid</span></li>
+      <li><b>{{ "{:,}".format(kroner).replace(",", " ") }}<i>kr</i></b><span>i registrert salg</span></li>
     </ul>
   </section>
 
@@ -35,9 +35,8 @@
       <p class="n-merke">01</p>
       <h2>Da det sto på</h2>
       <p class="n-under">
-        Begge kveldene har samme skala, så lufta over fredagen er ekte:
-        den nådde aldri opp til lørdagens topptime på
-        <b>{{ topptime }}</b> pizzaer.
+        Pizzaer per time. Begge grafene har samme skala. Den travleste
+        timen var {{ topptime_naar }}, med <b>{{ topptime }}</b> pizzaer.
       </p>
     </div>
 
@@ -75,8 +74,7 @@
       <p class="n-merke">02</p>
       <h2>Hva folk ville ha</h2>
       <p class="n-under">
-        Skinke tok nesten to av tre. Bredden er andel av den mest solgte, så
-        vinneren fyller linja og de andre leses mot den.
+        Skinke var klart mest populær. Nesten to av tre valgte den.
       </p>
     </div>
     <ul class="n-retter">
@@ -106,35 +104,30 @@
     <div class="n-spalte">
       <dl class="n-noter">
         <dt>300+, og {{ pizzaer }}</dt>
-        <dd>Minst {{ pizzaer_minst }} esker gikk ut døra. Systemet logget
-          {{ pizzaer }} av dem — noen ble solgt uten å gå gjennom det, og de
-          finnes ikke i basen. Overskriftene sier «{{ pizzaer_vist }}» fordi
-          det er sant. Alt som er <em>regnet</em> på under — søylene per time,
-          prosentene per rett, kronene — bygger på de {{ pizzaer }} som er
-          logget, så de summene stemmer med hverandre.</dd>
+        <dd>Vi solgte minst {{ pizzaer_minst }} pizzaer, men noen gikk utenom
+          systemet, så bare {{ pizzaer }} ble registrert. Grafene, prosentene
+          og kronebeløpet er regnet ut fra de {{ pizzaer }}.</dd>
 
         <dt>Hva som er talt</dt>
-        <dd>Alle bestillinger som ikke ble avbrutt eller forlatt — {{ bestillinger }}
-          av 208. De to som falt ut var én kunde som aldri kom, og én
-          feilbestilling.</dd>
+        <dd>{{ bestillinger }} av 208 bestillinger er med. De to som mangler
+          er én kunde som aldri kom og én feilbestilling.</dd>
 
-        <dt>Kveld, ikke kalenderdøgn</dt>
-        <dd>Bestillingen som kom 00:06 natt til lørdag er talt på fredagens
-          kveld, der den hører. Summen er den samme.</dd>
+        <dt>Etter midnatt</dt>
+        <dd>Én bestilling kom 00:06 natt til lørdag. Den er talt med på
+          fredagen.</dd>
 
         <dt>{{ median_minutter }} minutter</dt>
-        <dd>Median fra bestilling til «klar til henting», ikke snitt. Snittet
-          er 8,3 og medianen 8,2 — de er så like her at medianen er den
-          ærligste av dem. Den tregeste var {{ tregeste_minutter }} minutter.</dd>
+        <dd>Fra bestilling til pizzaen var klar tok det vanligvis rundt
+          {{ median_minutter }} minutter (medianen var 8,2 og snittet 8,3).
+          Lengste ventetid var {{ tregeste_minutter }} minutter.</dd>
 
         <dt>Kronene</dt>
-        <dd>{{ pizzaer }} loggede pizzaer til 59 kr. Det er hele regnestykket
-          — det var én pris på alt. De som gikk utenom systemet er ikke med.</dd>
+        <dd>{{ pizzaer }} registrerte pizzaer à 59 kr. Pizzaene som ble solgt
+          utenom systemet er ikke med.</dd>
 
-        <dt>Frosset</dt>
-        <dd>Tallene ble regnet ut én gang etter at vi stengte, og ligger i
-          koden. De teller ikke videre, og de kan ikke nullstilles av et
-          uhell i admin.</dd>
+        <dt>Faste tall</dt>
+        <dd>Tallene ble regnet ut etter at vi stengte, og de endrer seg
+          ikke.</dd>
       </dl>
       <a class="n-knapp" href="/">← Tilbake til forsida</a>
     </div>

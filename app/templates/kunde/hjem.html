@@ -9,7 +9,7 @@
 {% extends "base.html" %}
 {% block tittel %}Tyholt Pizzeria — pop-up og catering i Trondheim{% endblock %}
 {% block hode %}
-<meta name="description" content="Pizza til bursdager, firmafester og arrangementer i Trondheim. Send oss en mail, så finner vi ut av det.">
+<meta name="description" content="Tyholt Pizzeria lager pizza til bursdager, firmafester og andre arrangementer i Trondheim.">
 {% endblock %}
 {% block kropp_klasse %}nettside{% endblock %}
 
@@ -25,12 +25,12 @@
         <span class="ord-to" aria-hidden="true">Pizzer<span class="i-med-blad">ı<svg class="blad" aria-hidden="true"><use href="#basilikum"></use></svg></span>a</span>
       </h1>
       <p class="n-lopetekst">
-        To kvelder i festningshelga {{ datoer[-4:] }}. Tre pizzaer, én pris,
-        <b>{{ pizzaer_vist }}</b> esker ut døra.
+        To kvelder i festningshelga {{ datoer[-4:] }}, tre pizzaer på menyen
+        og <b>{{ pizzaer_vist }}</b> solgt.
       </p>
       <p class="n-status">
-        Vi er stengt nå, men tar cateringoppdrag – bursdager, firmafester
-        og arrangementer.
+        Akkurat nå er vi stengt, men vi tar gjerne catering til bursdager,
+        firmafester og andre arrangementer.
       </p>
       <div class="n-veier">
         <a class="n-knapp primar" href="#ta-kontakt">Spør om catering</a>
@@ -68,10 +68,10 @@
     <div class="n-tavle-spalte">
     <h2 class="n-tavle-tittel" id="tavle-tittel">Helga i tall</h2>
     <ul class="n-tall">
-      <li><b>{{ pizzaer_vist }}</b><span>pizzaer ut av ovnen</span></li>
+      <li><b>{{ pizzaer_vist }}</b><span>pizzaer solgt</span></li>
       <li><b>{{ bestillinger }}</b><span>bestillinger</span></li>
-      <li><b>{{ median_minutter }}<i>min</i></b><span>fra bestilling til klar</span></li>
-      <li><b>{{ topptime }}</b><span>i den travleste timen</span></li>
+      <li><b>{{ median_minutter }}<i>min</i></b><span>vanlig ventetid</span></li>
+      <li><b>{{ topptime }}</b><span>pizzaer den travleste timen</span></li>
     </ul>
     <a class="n-videre" href="/helga">Hele helga, time for time <span aria-hidden="true">→</span></a>
     </div>
@@ -91,8 +91,8 @@
       <p class="n-brod">{{ avsnitt }}</p>
       {% endfor %}
       <p class="n-brod">
-        Vi hadde tre pizzaer, ett bord og en ovn. Alt kostet
-        59 kr, fordi det var enklere å ha én pris enn tre.
+        Vi hadde tre pizzaer, ett bord og en ovn. Alt kostet 59 kr. Det
+        var enklere å ha én pris enn tre.
       </p>
     </div>
   </section>
@@ -102,7 +102,7 @@
     <div class="n-skinne">
       <p class="n-merke">02</p>
       <h2>Menyen vi hadde</h2>
-      <p class="n-under">Tre pizzaer. Alle kostet 59 kr.</p>
+      <p class="n-under">Tre pizzaer, 59 kr stykket.</p>
     </div>
     <ul class="n-meny">
       {% for rett in meny %}
@@ -123,9 +123,10 @@
       {% endfor %}
     </ul>
     <p class="n-finstilt">
-      Ca. 20 cm i diameter — deigen ble strukket for hånd, så regn med ±2 cm.
+      Pizzaene var rundt 20 cm. Deigen ble strukket for hånd, så noen ble
+      litt større og noen litt mindre.
       {% if spor %}Alt ble laget på samme kjøkken, så vi kunne ikke garantere
-      mot spor av {% for a in spor %}{{ a.navn | lower }}{% if loop.revindex == 2 %} og {% elif not loop.last %}, {% endif %}{% endfor %}.{% endif %}
+      at det ikke var spor av {% for a in spor %}{{ a.navn | lower }}{% if loop.revindex == 2 %} og {% elif not loop.last %}, {% endif %}{% endfor %}.{% endif %}
     </p>
   </section>
 
@@ -134,52 +135,49 @@
     <div class="n-skinne">
       <p class="n-merke">03</p>
       <h2>Hvordan det virket</h2>
-      <p class="n-under">Vi bygde hele greia selv. Her er veien en pizza tok.</p>
+      <p class="n-under">Vi lagde bestillingssystemet selv. Slik gikk en bestilling for seg.</p>
     </div>
     {# Nummerert fordi dette FAKTISK er en rekkefolge: hvert steg er der
        pizzaen var foer den kom til neste. Ikke pynt. #}
     <ol class="n-steg">
       <li>
-        <h3>Kunden bestilte fra telefonen</h3>
-        <p>Ingen app, ingen konto. Meny, pluss og minus, fornavn, ferdig.
-          Nummeret kom med én gang, og det var det eneste kunden trengte å
-          holde i.</p>
+        <h3>Du bestilte på mobilen</h3>
+        <p>Rett på nettsida, uten app eller innlogging. Du valgte pizza,
+          skrev fornavnet ditt og fikk et nummer med en gang.</p>
       </li>
       <li>
-        <h3>Én etikett per pizza</h3>
-        <p>En Brother PT-P300BT på 12 mm tape, over Bluetooth. Typen som én
-          stor bokstav, nummeret, fornavnet, «1/2» når det var flere, og en QR
-          tilbake hit. Alle etikettene i en bestilling kom ut som én strimmel
-          med klippemerker mellom — printeren kaster 2,5 cm tape per utskrift,
-          og da betaler man forspillet én gang i stedet for én gang per
-          pizza.</p>
+        <h3>En lapp på hver eske</h3>
+        <p>En liten etikettskriver (Brother PT-P300BT) skrev ut en lapp per
+          pizza med nummer, fornavn, hvilken pizza det var og en QR-kode.
+          Hadde du bestilt flere, kom alle lappene ut på én remse. Skriveren
+          bruker 2,5 cm tape hver gang den starter, så det sparte oss for en
+          del tape.</p>
       </li>
       <li>
-        <h3>Nummeret på en skjerm over disken</h3>
-        <p>En TV vendt mot rommet som bare viste tall. Aldri navn — de ropte
-          vi, og de sto på esken.</p>
+        <h3>Nummeret på skjermen</h3>
+        <p>En TV over disken viste numrene som var klare. Bare numre, ikke
+          navn. Navnene ropte vi opp.</p>
       </li>
       <li>
-        <h3>Vipps, før henting</h3>
-        <p>Kvitteringen hadde en Vipps-lenke som åpnet betalingen direkte.
-          Kassa kunne ikke trykke «Levert» før pengene var registrert inne.</p>
+        <h3>Vipps før henting</h3>
+        <p>Kvitteringen hadde en Vipps-lenke. Pizzaen ble ikke levert ut før
+          betalingen var kommet inn.</p>
       </li>
       <li>
         <h3>Alt på en Raspberry Pi under bordet</h3>
-        <p>FastAPI og SQLite i én prosess, bak en Cloudflare-tunnel, med
-          sikkerhetskopi av basen hvert minutt. Ingen sky, ingen database noe
-          annet sted, ingen månedsregning.</p>
+        <p>Hele systemet kjørte på en Raspberry Pi med FastAPI og SQLite, og
+          var koblet til nettet gjennom Cloudflare. Databasen ble kopiert
+          hvert minutt. Det kostet oss ingenting i måneden.</p>
       </li>
     </ol>
   </section>
 
   {# ── Ta kontakt ───────────────────────────────────────────────────────── #}
   <section class="n-kontakt" id="ta-kontakt">
-    <h2>Pizza til arrangementet ditt?</h2>
-    <p>Vi lager pizza til bursdager, firmafester og andre arrangementer.
-      Skriv dato, omtrent hvor mange dere blir og hvor det skal være, så
-      svarer vi.{% if innst.instagram %} Vil du bare vite når neste pop-up
-      er, følg oss på Instagram.{% endif %}</p>
+    <h2>Skal dere ha pizza på et arrangement?</h2>
+    <p>Send oss en mail med dato, omtrent hvor mange dere blir og hvor det
+      er, så hører du fra oss.{% if innst.instagram %} Vil du bare vite når
+      vi har neste pop-up, følg oss på Instagram.{% endif %}</p>
     <div class="n-veier midtstilt">
       <a class="n-knapp primar" href="mailto:hei@tyholtpizzeria.com?subject=Catering&amp;body=Dato%3A%20%0AAntall%20personer%3A%20%0ASted%3A%20%0A">Send en mail</a>
       {% if innst.instagram %}

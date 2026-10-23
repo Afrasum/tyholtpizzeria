@@ -150,7 +150,7 @@ def test_stengt_forside_er_nettsida_og_ikke_skjemaet(tmp_path, monkeypatch):
     assert 'href="/helga"' in kropp
     # Catering er grunnen til at sida finnes mens vi er stengt. Den skal
     # staa allerede i heroen og ha en egen vei ned til kontaktbolken.
-    assert "cateringoppdrag" in kropp
+    assert "Spør om catering" in kropp
     assert 'href="#ta-kontakt"' in kropp
     assert "subject=Catering" in kropp
     # Bestillingsveien skal ikke finnes i det hele tatt.
