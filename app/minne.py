@@ -42,7 +42,7 @@ TREGESTE_MINUTTER = 19     # ingen ventet mer enn tjue
 
 # Datoene, som tekst, fordi de aldri skal regnes på igjen.
 DATOER = "4.–5. september 2026"
-STED = "Tyholtveien 25, Trondheim"
+STED = "Trondheim"
 
 # Nummerserien: 47 til 257. Tre numre i mellom tilhørte prøvebestillinger som
 # ble slettet før åpning, så serien er lengre enn antall rader. Derfor står

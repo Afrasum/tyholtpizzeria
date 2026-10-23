@@ -508,7 +508,6 @@ small { display: block; margin-top: .4rem; font-size: .875rem; color: var(--blek
 .bunn .kontakt { display: flex; flex-direction: column; gap: .5rem; font-size: .95rem; color: var(--blekk-mild); }
 .bunn .kontakt a { text-decoration: none; }
 .bunn .kontakt .ig { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; }
-.bunn .adresse { align-self: center; padding-bottom: 2px; border-bottom: 1px solid rgba(30, 20, 14, .25); color: var(--blekk); }
 
 /* ── Nettsida (hjem.html, helga.html) ──────────────────────────────────────
    Dette er IKKE bestillingssida. Den er en 34 rem telefonspalte med
@@ -1021,7 +1020,6 @@ body.nettside { background: var(--fersken); }
 }
 .n-bunnvei a:hover { color: var(--tomat); border-bottom-color: var(--tomat); }
 .n-adresse { margin: 1.1rem 0 0; font-size: .875rem; color: var(--blekk-svak); }
-.n-adresse a { color: inherit; }
 
 /* Grafen leses med oyet; skjermleseren faar samme tall som tekst. */
 .for-skjermleser {
