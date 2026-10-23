@@ -7,7 +7,10 @@
    Alt innhold utenom «Hvem vi er» er hentet fra app/minne.py eller lest ut av
    koden. Ingen personopplysninger. #}
 {% extends "base.html" %}
-{% block tittel %}Tyholt Pizzeria — pop-up i Trondheim{% endblock %}
+{% block tittel %}Tyholt Pizzeria — pop-up og catering i Trondheim{% endblock %}
+{% block hode %}
+<meta name="description" content="Pizza til bursdager, firmafester og arrangementer i Trondheim. Send oss en mail, så finner vi ut av det.">
+{% endblock %}
 {% block kropp_klasse %}nettside{% endblock %}
 
 {% block innhold %}
@@ -26,11 +29,12 @@
         <b>{{ pizzaer_vist }}</b> esker ut døra.
       </p>
       <p class="n-status">
-        Vi er stengt nå, men dukker opp igjen ved anledninger.
-        {% if innst.instagram %}Det står på Instagram først.{% endif %}
+        Vi er stengt nå, men tar cateringoppdrag – bursdager, firmafester
+        og arrangementer.
       </p>
       <div class="n-veier">
-        <a class="n-knapp primar" href="/helga">Se helga i tall</a>
+        <a class="n-knapp primar" href="#ta-kontakt">Spør om catering</a>
+        <a class="n-knapp" href="/helga">Se helga i tall</a>
         {% if innst.instagram %}
         {# URL-en bygges av brukernavnet. Delingslenker fra appen har
            utm_source og en stkn-token som hoerer til den som delte — de skal
@@ -171,11 +175,13 @@
 
   {# ── Ta kontakt ───────────────────────────────────────────────────────── #}
   <section class="n-kontakt" id="ta-kontakt">
-    <h2>Skal du ha pizza til noe?</h2>
-    <p>Vi lover ingenting om kapasitet eller pris, men spør gjerne. Vil du
-      bare vite når vi dukker opp igjen, følg oss{% if innst.instagram %} på Instagram{% endif %}.</p>
+    <h2>Pizza til arrangementet ditt?</h2>
+    <p>Vi lager pizza til bursdager, firmafester og andre arrangementer.
+      Skriv dato, omtrent hvor mange dere blir og hvor det skal være, så
+      svarer vi.{% if innst.instagram %} Vil du bare vite når neste pop-up
+      er, følg oss på Instagram.{% endif %}</p>
     <div class="n-veier midtstilt">
-      <a class="n-knapp primar" href="mailto:hei@tyholtpizzeria.com?subject=Pizza%20til%20noe">Send en mail</a>
+      <a class="n-knapp primar" href="mailto:hei@tyholtpizzeria.com?subject=Catering&amp;body=Dato%3A%20%0AAntall%20personer%3A%20%0ASted%3A%20%0A">Send en mail</a>
       {% if innst.instagram %}
       <a class="n-knapp" href="https://www.instagram.com/{{ innst.instagram }}/"
          rel="me noopener" target="_blank">
