@@ -123,8 +123,7 @@
       {% endfor %}
     </ul>
     <p class="n-finstilt">
-      Pizzaene var rundt 20 cm. Deigen ble strukket for hånd, så noen ble
-      litt større og noen litt mindre.
+      Pizzaene var rundt 20 cm.
       {% if spor %}Alt ble laget på samme kjøkken, så vi kunne ikke garantere
       at det ikke var spor av {% for a in spor %}{{ a.navn | lower }}{% if loop.revindex == 2 %} og {% elif not loop.last %}, {% endif %}{% endfor %}.{% endif %}
     </p>
@@ -142,32 +141,24 @@
     <ol class="n-steg">
       <li>
         <h3>Du bestilte på mobilen</h3>
-        <p>Rett på nettsida, uten app eller innlogging. Du valgte pizza,
-          skrev fornavnet ditt og fikk et nummer med en gang.</p>
+        <p>Rett på nettsida, uten app. Du fikk et nummer med en gang.</p>
       </li>
       <li>
         <h3>En lapp på hver eske</h3>
-        <p>En liten etikettskriver (Brother PT-P300BT) skrev ut en lapp per
-          pizza med nummer, fornavn, hvilken pizza det var og en QR-kode.
-          Hadde du bestilt flere, kom alle lappene ut på én remse. Skriveren
-          bruker 2,5 cm tape hver gang den starter, så det sparte oss for en
-          del tape.</p>
+        <p>En liten etikettskriver lagde en lapp med nummer og navn til
+          hver pizza.</p>
       </li>
       <li>
         <h3>Nummeret på skjermen</h3>
-        <p>En TV over disken viste numrene som var klare. Bare numre, ikke
-          navn. Navnene ropte vi opp.</p>
+        <p>En TV over disken viste når pizzaen din var klar.</p>
       </li>
       <li>
         <h3>Vipps før henting</h3>
-        <p>Kvitteringen hadde en Vipps-lenke. Pizzaen ble ikke levert ut før
-          betalingen var kommet inn.</p>
+        <p>Du betalte med Vipps rett fra kvitteringen.</p>
       </li>
       <li>
         <h3>Alt på en Raspberry Pi under bordet</h3>
-        <p>Hele systemet kjørte på en Raspberry Pi med FastAPI og SQLite, og
-          var koblet til nettet gjennom Cloudflare. Databasen ble kopiert
-          hvert minutt. Det kostet oss ingenting i måneden.</p>
+        <p>Ingen skytjenester, og ingen månedlige kostnader.</p>
       </li>
     </ol>
   </section>

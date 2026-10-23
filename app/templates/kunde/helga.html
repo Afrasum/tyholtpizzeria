@@ -35,8 +35,8 @@
       <p class="n-merke">01</p>
       <h2>Da det sto på</h2>
       <p class="n-under">
-        Pizzaer per time. Begge grafene har samme skala. Den travleste
-        timen var {{ topptime_naar }}, med <b>{{ topptime }}</b> pizzaer.
+        Pizzaer per time. Den travleste timen var {{ topptime_naar }},
+        med <b>{{ topptime }}</b> pizzaer.
       </p>
     </div>
 
@@ -107,17 +107,8 @@
         <dd>Noen pizzaer ble solgt utenom systemet. Grafene og prosentene
           bygger på de {{ pizzaer }} som ble registrert.</dd>
 
-        <dt>Hva som er talt</dt>
-        <dd>{{ bestillinger }} av 208 bestillinger er med. De to som mangler
-          er én kunde som aldri kom og én feilbestilling.</dd>
-
-        <dt>Etter midnatt</dt>
-        <dd>Én bestilling kom 00:06 natt til lørdag. Den er talt med på
-          fredagen.</dd>
-
         <dt>{{ median_minutter }} minutter</dt>
-        <dd>Fra bestilling til pizzaen var klar tok det vanligvis rundt
-          {{ median_minutter }} minutter (medianen var 8,2 og snittet 8,3).
+        <dd>Så lenge tok det vanligvis fra bestilling til pizzaen var klar.
           Lengste ventetid var {{ tregeste_minutter }} minutter.</dd>
 
         <dt>Regnestykket</dt>
@@ -127,10 +118,6 @@
           {{ "{:,}".format(overskudd).replace(",", " ") }} kr igjen. Vi var
           {{ personer }} stykker som jobbet {{ timer }} timer til sammen, så
           timelønna landet på rundt {{ timelonn }} kr.</dd>
-
-        <dt>Faste tall</dt>
-        <dd>Tallene ble regnet ut etter at vi stengte, og de endrer seg
-          ikke.</dd>
       </dl>
       <a class="n-knapp" href="/">← Tilbake til forsida</a>
     </div>
